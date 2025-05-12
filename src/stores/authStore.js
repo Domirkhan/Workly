@@ -6,15 +6,15 @@ export const useAuthStore = create((set) => ({
   isLoading: false,
   error: null,
 
-  login: async (credentials) => {
+    login: async (credentials) => {
     set({ isLoading: true, error: null });
     try {
-      const res = await fetch('https://workly-backend.onrender.com/api/auth/login', {
+      const res = await fetch(`${BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
+        credentials: 'include', // Важно для сохранения cookies
         body: JSON.stringify(credentials)
       });
 
@@ -24,13 +24,8 @@ export const useAuthStore = create((set) => ({
       }
 
       const data = await res.json();
-      if (data && data.user) {
-        localStorage.setItem('user', JSON.stringify(data.user));
-        set({ user: data.user, isLoading: false });
-        return data;
-      } else {
-        throw new Error('Некорректный ответ от сервера');
-      }
+      localStorage.setItem('user', JSON.stringify(data.user));
+      set({ user: data.user, isLoading: false });
     } catch (error) {
       console.error('Ошибка входа:', error);
       set({ error: error.message, isLoading: false });
@@ -63,12 +58,25 @@ export const useAuthStore = create((set) => ({
 
   checkAuth: async () => {
     try {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        set({ user: JSON.parse(storedUser) });
+      const res = await fetch(`${BASE_URL}/auth/check`, {
+        credentials: 'include' // Важно для отправки cookies
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem('user', JSON.stringify(data.user));
+        set({ user: data.user });
+        return true;
+      } else {
+        localStorage.removeItem('user');
+        set({ user: null });
+        return false;
       }
     } catch (error) {
-      console.error('Ошибка при проверке аутентификации:', error);
+      console.error('Ошибка проверки аутентификации:', error);
+      localStorage.removeItem('user');
+      set({ user: null });
+      return false;
     }
   }
 }));

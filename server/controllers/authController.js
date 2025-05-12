@@ -119,7 +119,35 @@ export const login = async (req, res) => {
     return res.status(500).json({ message: 'Ошибка сервера при входе' });
   }
 };
+export const checkAuth = async (req, res) => {
+  try {
+    const token = req.cookies.token;
+    
+    if (!token) {
+      return res.status(401).json({ message: 'Не авторизован' });
+    }
 
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id).select('-password');
+
+    if (!user) {
+      return res.status(401).json({ message: 'Пользователь не найден' });
+    }
+
+    res.json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        companyId: user.companyId
+      }
+    });
+  } catch (error) {
+    console.error('Ошибка проверки аутентификации:', error);
+    res.status(401).json({ message: 'Недействительный токен' });
+  }
+};
 // Выход
 export const logout = (req, res) => {
   res.cookie('token', '', {

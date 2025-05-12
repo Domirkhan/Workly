@@ -14,7 +14,12 @@ export default defineConfig({
         target: 'https://workly-backend.onrender.com',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api/, '')
+        rewrite: (path) => path.replace(/^\/api/, ''),
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            proxyReq.setHeader('origin', 'https://workly-h3jj.onrender.com');
+          });
+        }
       }
     }
   }

@@ -26,7 +26,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 
 
 function App() {
-  const { user, checkAuth } = useAuthStore();
+  const { checkAuth } = useAuthStore();
 
 
   useEffect(() => {
