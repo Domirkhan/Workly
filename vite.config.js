@@ -7,6 +7,14 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          ui: ['@headlessui/react', 'lucide-react']
+        }
+      }
+    }
   },
   server: {
     proxy: {
@@ -14,16 +22,24 @@ export default defineConfig({
         target: 'https://workly-backend.onrender.com',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-        configure: (proxy) => {
-          proxy.on('proxyReq', (proxyReq) => {
-            proxyReq.setHeader('origin', 'https://workly-h3jj.onrender.com');
-          });
-          proxy.on('proxyRes', (proxyRes) => {
-            proxyRes.headers['Access-Control-Allow-Credentials'] = 'true';
-          });
-        }
+        rewrite: (path) => path.replace(/^\/api/, '')
       }
+    },
+    headers: {
+      'Cache-Control': 'no-cache',
+      'Access-Control-Allow-Origin': '*'
     }
+  },
+  // Настройки для правильной работы маршрутизации
+  resolve: {
+    alias: {
+      '@': '/src'
+    }
+  },
+  // Настройки для SPA
+  preview: {
+    port: 5000,
+    // Добавляем обработку всех маршрутов через index.html
+    historyApiFallback: true
   }
 });
