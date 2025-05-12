@@ -30,13 +30,21 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
 }));
 
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path}`);
+  next();
+});
+
 app.use(express.json());
 app.use(cookieParser());
 
 // Обработчик ошибок
 app.use((err, req, res, next) => {
   console.error('Server Error:', err);
-  res.status(500).json({ message: err.message || 'Внутренняя ошибка сервера' });
+  res.status(500).json({ 
+    message: err.message || 'Внутренняя ошибка сервера',
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
 });
 
 app.use('/api/auth', authRoutes);

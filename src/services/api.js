@@ -1,23 +1,28 @@
 const BASE_URL = 'https://workly-backend.onrender.com/api';
 
 async function fetchWithAuth(endpoint, options = {}) {
-  const response = await fetch(`${BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    credentials: 'include',
-  });
+  try {
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      credentials: 'include',
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Что-то пошло не так');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Что-то пошло не так');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('API Error:', error);
+    throw error;
   }
-
-  return response.json();
 }
-
 export const authApi = {
   register: (userData) => 
     fetchWithAuth('/auth/register', {
