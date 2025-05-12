@@ -82,8 +82,6 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    console.log('Login attempt:', { email }); // Отладочный вывод
-
     if (!email || !password) {
       return res.status(400).json({ message: 'Email и пароль обязательны' });
     }
@@ -100,7 +98,6 @@ export const login = async (req, res) => {
 
     const token = generateToken(user._id);
 
-    // Настройка безопасных cookie
     res.cookie('token', token, {
       httpOnly: true,
       secure: true,
@@ -108,17 +105,17 @@ export const login = async (req, res) => {
       maxAge: 30 * 24 * 60 * 60 * 1000
     });
 
-    // Отправляем ответ
     return res.status(200).json({
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        companyId: user.companyId
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('Ошибка входа:', error);
     return res.status(500).json({ message: 'Ошибка сервера при входе' });
   }
 };

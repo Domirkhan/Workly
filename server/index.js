@@ -32,11 +32,13 @@ app.use(cors({
 
 app.use(express.json());
 app.use(cookieParser());
-// Добавьте обработку ошибок
+
+// Обработчик ошибок
 app.use((err, req, res, next) => {
   console.error('Server Error:', err);
   res.status(500).json({ message: err.message || 'Внутренняя ошибка сервера' });
 });
+
 app.use('/api/auth', authRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/timesheet', timesheetRoutes);
