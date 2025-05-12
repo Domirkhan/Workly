@@ -8,32 +8,37 @@ export const useAuthStore = create((set) => ({
   isLoading: false,
   error: null,
 
-  login: async (credentials) => {
-    set({ isLoading: true, error: null });
-    try {
-      const res = await fetch(`${BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(credentials)
-      });
+login: async (credentials) => {
+  set({ isLoading: true, error: null });
+  try {
+    const res = await fetch(`${BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(credentials)
+    });
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || 'Ошибка авторизации');
-      }
+    const data = await res.json();
 
-      const data = await res.json();
-      localStorage.setItem('user', JSON.stringify(data.user));
-      set({ user: data.user, isLoading: false });
-    } catch (error) {
-      console.error('Ошибка входа:', error);
-      set({ error: error.message, isLoading: false });
-      throw error;
+    if (!res.ok) {
+      throw new Error(data.message || 'Ошибка авторизации');
     }
-  },
+
+    if (!data.user) {
+      throw new Error('Некорректный ответ сервера');
+    }
+
+    localStorage.setItem('user', JSON.stringify(data.user));
+    set({ user: data.user, isLoading: false });
+    return data;
+  } catch (error) {
+    console.error('Ошибка входа:', error);
+    set({ error: error.message, isLoading: false });
+    throw error;
+  }
+},
 
   register: async (userData) => {
     set({ isLoading: true, error: null });

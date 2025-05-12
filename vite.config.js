@@ -19,6 +19,9 @@ export default defineConfig({
           proxy.on('proxyReq', (proxyReq) => {
             proxyReq.setHeader('origin', 'https://workly-h3jj.onrender.com');
           });
+          proxy.on('proxyRes', (proxyRes) => {
+            proxyRes.headers['Access-Control-Allow-Credentials'] = 'true';
+          });
         }
       }
     }

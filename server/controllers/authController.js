@@ -98,12 +98,14 @@ export const login = async (req, res) => {
 
     const token = generateToken(user._id);
 
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: 30 * 24 * 60 * 60 * 1000
-    });
+// В функции login:
+res.cookie('token', token, {
+  httpOnly: true,
+  secure: true, // для HTTPS
+  sameSite: 'none', // для cross-site запросов
+  maxAge: 30 * 24 * 60 * 60 * 1000, // 30 дней
+  domain: '.onrender.com' // Добавляем домен
+});
 
     return res.status(200).json({
       user: {
