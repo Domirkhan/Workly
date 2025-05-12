@@ -1,12 +1,14 @@
 import { create } from 'zustand';
 import { authApi } from '../services/api';
 
+const BASE_URL = 'https://workly-backend.onrender.com/api';
+
 export const useAuthStore = create((set) => ({
   user: JSON.parse(localStorage.getItem('user')) || null,
   isLoading: false,
   error: null,
 
-    login: async (credentials) => {
+  login: async (credentials) => {
     set({ isLoading: true, error: null });
     try {
       const res = await fetch(`${BASE_URL}/auth/login`, {
@@ -14,7 +16,7 @@ export const useAuthStore = create((set) => ({
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include', // Важно для сохранения cookies
+        credentials: 'include',
         body: JSON.stringify(credentials)
       });
 
@@ -46,6 +48,7 @@ export const useAuthStore = create((set) => ({
     }
   },
 
+
   logout: async () => {
     try {
       await authApi.logout();
@@ -59,7 +62,10 @@ export const useAuthStore = create((set) => ({
   checkAuth: async () => {
     try {
       const res = await fetch(`${BASE_URL}/auth/check`, {
-        credentials: 'include' // Важно для отправки cookies
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
 
       if (res.ok) {
