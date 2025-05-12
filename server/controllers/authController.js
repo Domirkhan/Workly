@@ -81,54 +81,45 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    
+    console.log('Login attempt:', { email }); // Отладочный вывод
 
-    // Проверяем, что email и password переданы
     if (!email || !password) {
-      return res.status(400).json({ 
-        message: 'Пожалуйста, введите email и пароль' 
-      });
+      return res.status(400).json({ message: 'Email и пароль обязательны' });
     }
 
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
-      return res.status(400).json({ 
-        message: 'Неверный email или пароль' 
-      });
+      return res.status(401).json({ message: 'Неверный email или пароль' });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return res.status(400).json({ 
-        message: 'Неверный email или пароль' 
-      });
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Неверный email или пароль' });
     }
 
     const token = generateToken(user._id);
 
-    // Отправляем токен в куки
+    // Настройка безопасных cookie
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 дней
+      secure: true,
+      sameSite: 'none',
+      maxAge: 30 * 24 * 60 * 60 * 1000
     });
 
-    // Отправляем данные пользователя без пароля
-    res.json({
+    // Отправляем ответ
+    return res.status(200).json({
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role,
-        position: user.position,
-        hourlyRate: user.hourlyRate,
-        status: user.status,
-        companyId: user.companyId
+        role: user.role
       }
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Ошибка сервера' });
+    return res.status(500).json({ message: 'Ошибка сервера при входе' });
   }
 };
 

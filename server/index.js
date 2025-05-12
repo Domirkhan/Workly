@@ -34,10 +34,9 @@ app.use(express.json());
 app.use(cookieParser());
 // Добавьте обработку ошибок
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Что-то пошло не так!' });
+  console.error('Server Error:', err);
+  res.status(500).json({ message: err.message || 'Внутренняя ошибка сервера' });
 });
-
 app.use('/api/auth', authRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/timesheet', timesheetRoutes);

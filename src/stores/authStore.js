@@ -6,29 +6,37 @@ export const useAuthStore = create((set) => ({
   isLoading: false,
   error: null,
 
- login: async (credentials) => {
+login: async (credentials) => {
   set({ isLoading: true, error: null });
   try {
-    const res = await fetch('/api/auth/login', {
+    const res = await fetch(`${process.env.BASE_URL}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
       },
       credentials: 'include',
       body: JSON.stringify(credentials)
     });
-    
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.message || 'Ошибка авторизации');
+
+    const data = await res.text(); // Сначала получаем текст ответа
+    console.log('Server response:', data); // Отладочный вывод
+
+    let jsonData;
+    try {
+      jsonData = JSON.parse(data); // Пытаемся распарсить JSON
+    } catch (e) {
+      throw new Error('Некорректный ответ сервера');
     }
-    
-    const data = await res.json();
-    localStorage.setItem('user', JSON.stringify(data.user));
-    set({ user: data.user, isLoading: false });
-    return data;
+
+    if (!res.ok) {
+      throw new Error(jsonData.message || 'Ошибка авторизации');
+    }
+
+    localStorage.setItem('user', JSON.stringify(jsonData.user));
+    set({ user: jsonData.user, isLoading: false });
+    return jsonData;
   } catch (error) {
+    console.error('Login error:', error);
     set({ error: error.message, isLoading: false });
     throw error;
   }
