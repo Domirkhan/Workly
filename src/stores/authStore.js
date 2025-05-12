@@ -6,37 +6,33 @@ export const useAuthStore = create((set) => ({
   isLoading: false,
   error: null,
 
-  login: async (credentials) => {
-    set({ isLoading: true, error: null });
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          email: credentials.email,
-          password: credentials.password
-        })
-      });
-      
-      const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.message || 'Ошибка авторизации');
-      }
-      
-      // Сохраняем данные пользователя
-      localStorage.setItem('user', JSON.stringify(data.user));
-      set({ user: data.user, isLoading: false });
-      
-      return data;
-    } catch (error) {
-      set({ error: error.message, isLoading: false });
-      throw error;
+ login: async (credentials) => {
+  set({ isLoading: true, error: null });
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify(credentials)
+    });
+    
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.message || 'Ошибка авторизации');
     }
-  },
+    
+    const data = await res.json();
+    localStorage.setItem('user', JSON.stringify(data.user));
+    set({ user: data.user, isLoading: false });
+    return data;
+  } catch (error) {
+    set({ error: error.message, isLoading: false });
+    throw error;
+  }
+},
 
   register: async (userData) => {
     set({ isLoading: true, error: null });
