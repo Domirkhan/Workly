@@ -6,10 +6,24 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'https://workly-backend.onrender.com',
         changeOrigin: true,
         secure: false
       }
     }
+  },
+  // Добавляем настройки для сборки
+  build: {
+    outDir: 'dist',
+    rollupOptions: {
+      external: ['@rollup/rollup-linux-x64-gnu'],
+      output: {
+        manualChunks: undefined
+      }
+    }
+  },
+  // Добавляем настройки для совместимости
+  optimizeDeps: {
+    exclude: ['@rollup/rollup-linux-x64-gnu']
   }
 });
