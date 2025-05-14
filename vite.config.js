@@ -12,7 +12,6 @@ export default defineConfig({
       }
     }
   },
-  // Добавляем настройки для сборки
   build: {
     outDir: 'dist',
     rollupOptions: {
@@ -22,8 +21,12 @@ export default defineConfig({
       }
     }
   },
-  // Добавляем настройки для совместимости
   optimizeDeps: {
     exclude: ['@rollup/rollup-linux-x64-gnu']
+  },
+  resolve: {
+    alias: {
+      '@rollup/rollup-linux-x64-gnu': false
+    }
   }
 });
