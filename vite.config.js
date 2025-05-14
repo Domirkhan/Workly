@@ -14,13 +14,18 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
+    assetsDir: 'assets',
     rollupOptions: {
       external: ['@rollup/rollup-linux-x64-gnu'],
       output: {
-        manualChunks: undefined
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          ui: ['@headlessui/react', 'lucide-react'],
+          charts: ['recharts'],
+          utils: ['date-fns', 'jspdf', 'html5-qrcode']
+        }
       }
     },
-    // Добавляем эти настройки
     manifest: true,
     ssrManifest: true
   },
