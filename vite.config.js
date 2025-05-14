@@ -1,14 +1,8 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import commonjs from '@rollup/plugin-commonjs';
-import { nodeResolve } from '@rollup/plugin-node-resolve';
 
 export default defineConfig({
-  plugins: [
-    react(),
-    commonjs(),
-    nodeResolve()
-  ],
+  plugins: [react()],
   server: {
     proxy: {
       '/api': {
@@ -18,20 +12,17 @@ export default defineConfig({
       }
     }
   },
+  // Добавляем настройки для сборки
   build: {
     outDir: 'dist',
     rollupOptions: {
       external: ['@rollup/rollup-linux-x64-gnu'],
       output: {
-        manualChunks: undefined, // Убираем ручное разделение чанков
-        format: 'es'
+        manualChunks: undefined
       }
-    },
-    target: 'es2015',
-    sourcemap: true, // Включаем sourcemaps для отладки
-    minify: false, // Отключаем минификацию временно
-    chunkSizeWarningLimit: 1600
+    }
   },
+  // Добавляем настройки для совместимости
   optimizeDeps: {
     exclude: ['@rollup/rollup-linux-x64-gnu']
   }
