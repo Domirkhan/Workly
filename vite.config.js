@@ -15,21 +15,24 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
+    sourcemap: true, // Добавляем source maps для отладки
     rollupOptions: {
-      external: ['@rollup/rollup-linux-x64-gnu'],
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          ui: ['@headlessui/react', 'lucide-react'],
-          charts: ['recharts'],
-          utils: ['date-fns', 'jspdf', 'html5-qrcode']
-        }
+        manualChunks: undefined, // Отключаем ручное разделение чанков
       }
-    },
-    manifest: true,
-    ssrManifest: true
+    }
   },
   optimizeDeps: {
-    exclude: ['@rollup/rollup-linux-x64-gnu']
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      '@headlessui/react',
+      'lucide-react',
+      'recharts',
+      'date-fns',
+      'jspdf',
+      'html5-qrcode'
+    ]
   }
 });

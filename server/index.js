@@ -69,3 +69,16 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🌐 Сервер запущен на порту ${PORT}`);
 });
+
+if (process.env.NODE_ENV === 'production') {
+  const __dirname = path.resolve();
+  app.use(express.static(path.join(__dirname, 'dist')));
+  
+  // Обработка всех остальных маршрутов
+  app.get('*', (req, res) => {
+    if (req.url.startsWith('/api')) {
+      return; // Пропускаем API запросы
+    }
+    res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
+  });
+}
