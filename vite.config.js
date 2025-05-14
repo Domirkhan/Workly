@@ -1,8 +1,14 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import commonjs from '@rollup/plugin-commonjs';
+import { nodeResolve } from '@rollup/plugin-node-resolve';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    commonjs(),
+    nodeResolve()
+  ],
   server: {
     proxy: {
       '/api': {
@@ -17,16 +23,15 @@ export default defineConfig({
     rollupOptions: {
       external: ['@rollup/rollup-linux-x64-gnu'],
       output: {
-        manualChunks: undefined
+        manualChunks: undefined,
+        format: 'es'
       }
-    }
+    },
+    target: 'es2015',
+    sourcemap: false,
+    minify: 'terser'
   },
   optimizeDeps: {
     exclude: ['@rollup/rollup-linux-x64-gnu']
-  },
-  resolve: {
-    alias: {
-      '@rollup/rollup-linux-x64-gnu': false
-    }
   }
 });
