@@ -12,7 +12,6 @@ export default defineConfig({
       }
     }
   },
-  // Добавляем настройки для сборки
   build: {
     outDir: 'dist',
     rollupOptions: {
@@ -20,9 +19,11 @@ export default defineConfig({
       output: {
         manualChunks: undefined
       }
-    }
+    },
+    // Добавляем эти настройки
+    manifest: true,
+    ssrManifest: true
   },
-  // Добавляем настройки для совместимости
   optimizeDeps: {
     exclude: ['@rollup/rollup-linux-x64-gnu']
   }

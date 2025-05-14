@@ -36,7 +36,12 @@ app.use('/api/timesheet', timesheetRoutes);
 app.use('/api/company', companyRoutes);
 app.use('/api/bonuses', bonusRoutes);
 
+app.use(express.static(path.join(__dirname, '..', 'dist')));
 
+// Handle SPA routing
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
+});
 
 // Проверяем, что переменные окружения загружены
 console.log('MongoDB URI:', process.env.MONGODB_URI);
