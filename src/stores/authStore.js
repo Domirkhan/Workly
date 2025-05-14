@@ -1,44 +1,42 @@
 import { create } from 'zustand';
 import { authApi } from '../services/api';
 
-const BASE_URL = 'https://workly-backend.onrender.com/api';
-
 export const useAuthStore = create((set) => ({
   user: JSON.parse(localStorage.getItem('user')) || null,
   isLoading: false,
   error: null,
 
-login: async (credentials) => {
-  set({ isLoading: true, error: null });
-  try {
-    const res = await fetch(`${BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify(credentials)
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.message || 'Ошибка авторизации');
+  login: async (credentials) => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          email: credentials.email,
+          password: credentials.password
+        })
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.message || 'Ошибка авторизации');
+      }
+      
+      // Сохраняем данные пользователя
+      localStorage.setItem('user', JSON.stringify(data.user));
+      set({ user: data.user, isLoading: false });
+      
+      return data;
+    } catch (error) {
+      set({ error: error.message, isLoading: false });
+      throw error;
     }
-
-    if (!data.user) {
-      throw new Error('Некорректный ответ сервера');
-    }
-
-    localStorage.setItem('user', JSON.stringify(data.user));
-    set({ user: data.user, isLoading: false });
-    return data;
-  } catch (error) {
-    console.error('Ошибка входа:', error);
-    set({ error: error.message, isLoading: false });
-    throw error;
-  }
-},
+  },
 
   register: async (userData) => {
     set({ isLoading: true, error: null });
@@ -53,7 +51,6 @@ login: async (credentials) => {
     }
   },
 
-
   logout: async () => {
     try {
       await authApi.logout();
@@ -66,28 +63,12 @@ login: async (credentials) => {
 
   checkAuth: async () => {
     try {
-      const res = await fetch(`${BASE_URL}/auth/check`, {
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        localStorage.setItem('user', JSON.stringify(data.user));
-        set({ user: data.user });
-        return true;
-      } else {
-        localStorage.removeItem('user');
-        set({ user: null });
-        return false;
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        set({ user: JSON.parse(storedUser) });
       }
     } catch (error) {
-      console.error('Ошибка проверки аутентификации:', error);
-      localStorage.removeItem('user');
-      set({ user: null });
-      return false;
+      console.error('Ошибка при проверке аутентификации:', error);
     }
   }
 }));

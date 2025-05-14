@@ -86,7 +86,7 @@ export const clockOut = async (req, res) => {
 
     // Рассчитываем часы и оплату
     const hours = (activeRecord.clockOut - activeRecord.clockIn) / (1000 * 60 * 60);
-    activeRecord.totalHours = Math.round(hours * 100) / 100;
+    activeRecord.totalHours = Number(hours.toFixed(3));
     activeRecord.calculatedPay = activeRecord.totalHours * (employee.hourlyRate || 0);
 
     await activeRecord.save();
@@ -138,8 +138,14 @@ export const getAllTimeRecords = async (req, res) => {
       .populate('employee', 'name hourlyRate position')
       .sort({ date: -1 })
       .lean();
+
+    // Не округляем часы при возврате данных
+    const processedRecords = timeRecords.map(record => ({
+      ...record,
+      totalHours: record.totalHours ? Number(record.totalHours) : 0
+    }));
     
-    res.json(timeRecords);
+    res.json(processedRecords);
   } catch (error) {
     console.error('Ошибка при получении записей:', error);
     res.status(500).json({ message: 'Ошибка сервера' });
@@ -148,9 +154,17 @@ export const getAllTimeRecords = async (req, res) => {
 export const getMonthlyTimeRecords = async (req, res) => {
   try {
     const { month, year } = req.query;
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0);
 
+    // Проверяем наличие параметров
+    if (!month || !year) {
+      return res.status(400).json({ message: 'Необходимо указать месяц и год' });
+    }
+
+    // Создаем правильные даты начала и конца месяца
+    const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
+    const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59));
+
+    // Получаем записи за указанный месяц
     const timeRecords = await TimeRecord.find({
       date: {
         $gte: startDate,
@@ -161,26 +175,47 @@ export const getMonthlyTimeRecords = async (req, res) => {
     .sort({ date: 1 })
     .lean();
 
-    // Группируем записи по сотрудникам
+    // Группируем записи по сотрудникам с правильным подсчетом
     const employeeRecords = {};
+    
     timeRecords.forEach(record => {
-      if (!employeeRecords[record.employee._id]) {
-        employeeRecords[record.employee._id] = {
+      const employeeId = record.employee?._id?.toString();
+      
+      if (!employeeId) return;
+
+      if (!employeeRecords[employeeId]) {
+        employeeRecords[employeeId] = {
           employee: record.employee,
           totalHours: 0,
           totalPay: 0,
           records: []
         };
       }
-      employeeRecords[record.employee._id].records.push(record);
-      employeeRecords[record.employee._id].totalHours += record.totalHours || 0;
-      employeeRecords[record.employee._id].totalPay += record.calculatedPay || 0;
+
+      // Учитываем только завершенные записи
+      if (record.status === 'completed' && record.totalHours && record.calculatedPay) {
+        employeeRecords[employeeId].totalHours += Number(record.totalHours) || 0;
+        employeeRecords[employeeId].totalPay += Number(record.calculatedPay) || 0;
+      }
+      
+      employeeRecords[employeeId].records.push(record);
     });
 
-    res.json(Object.values(employeeRecords));
+    // Преобразуем объект в массив и округляем значения
+    const result = Object.values(employeeRecords).map(record => ({
+      ...record,
+      totalHours: Number(record.totalHours), // Убираем округление
+      totalPay: Number(record.totalPay.toFixed(2))
+    }));
+
+    res.json(result);
+
   } catch (error) {
     console.error('Ошибка при получении месячных записей:', error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ 
+      message: 'Ошибка при получении данных',
+      error: error.message 
+    });
   }
 };
 
@@ -241,8 +276,15 @@ export const getEmployeeMonthlyDetails = async (req, res) => {
     const { employeeId } = req.params;
     const { month, year } = req.query;
     
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0);
+    if (!employeeId || !month || !year) {
+      return res.status(400).json({ 
+        message: 'Необходимо указать id сотрудника, месяц и год' 
+      });
+    }
+
+    // Создаем правильные даты начала и конца месяца с UTC
+    const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
+    const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59));
 
     // Получаем данные о сотруднике
     const employee = await User.findById(employeeId)
@@ -264,15 +306,20 @@ export const getEmployeeMonthlyDetails = async (req, res) => {
     .sort({ date: 1 })
     .lean();
 
-    // Расчет итоговых значений
-    const totalHours = records.reduce((sum, record) => sum + (record.totalHours || 0), 0);
-    const totalPay = records.reduce((sum, record) => sum + (record.calculatedPay || 0), 0);
+    // Расчет итоговых значений с проверкой на null
+    const totalHours = records.reduce((sum, record) => 
+      sum + (Number(record.totalHours) || 0), 0
+    );
+    
+    const totalPay = records.reduce((sum, record) => 
+      sum + (Number(record.calculatedPay) || 0), 0
+    );
 
     res.json({
       employee,
       records,
-      totalHours,
-      totalPay
+      totalHours: Number(totalHours.toFixed(1)),
+      totalPay: Number(totalPay.toFixed(2))
     });
   } catch (error) {
     console.error('Ошибка при получении деталей сотрудника:', error);

@@ -20,6 +20,7 @@ import QRCodeGenerator from './pages/admin/QRCodeGenerator';
 import LandingPage from './pages/LandingPage';
 import NotFound from './pages/NotFound';
 import EmployeeList from './pages/admin/EmployeeList';
+import BonusHistoryPage from './pages/employee/BonusHistoryPage';
 // Components
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
@@ -100,6 +101,14 @@ function App() {
               <EmployeeProfile />
             </ProtectedRoute>
           } />
+          <Route
+            path="/bonus-history"
+            element={
+              <ProtectedRoute>
+                <BonusHistoryPage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Редирект с /dashboard на соответствующую панель */}
           <Route path="/dashboard" element={

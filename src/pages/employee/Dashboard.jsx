@@ -4,6 +4,7 @@ import { ru } from 'date-fns/locale';
 import { Clock, DollarSign, Calendar, CheckCircle2, ArrowRight } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useNavigate } from 'react-router-dom';
+import { formatTime } from '../../utils/formatTime';
 
 import EmployeeLayout from '../../components/layout/EmployeeLayout';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
@@ -170,13 +171,13 @@ export default function EmployeeDashboard() {
               <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-800 mr-4">
                 <Clock className="w-6 h-6" />
               </div>
-              <div>
-                <p className="text-sm font-medium text-slate-500">Всего часов</p>
-                <h3 className="text-2xl font-bold text-slate-900">
-                  {stats.totalHours.toFixed(1)}
-                </h3>
-                <p className="text-xs text-blue-600">За все время</p>
-              </div>
+             <div>
+              <p className="text-sm font-medium text-slate-500">Всего часов</p>
+              <h3 className="text-2xl font-bold text-slate-900">
+                {formatTime(stats.totalHours)}
+              </h3>
+              <p className="text-xs text-blue-600">За все время</p>
+            </div>
             </div>
           </CardContent>
         </Card>
@@ -205,9 +206,9 @@ export default function EmployeeDashboard() {
                 <Calendar className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-sm font-medium text-slate-500">Эта неделя</p>
+               <p className="text-sm font-medium text-slate-500">Эта неделя</p>
                 <h3 className="text-2xl font-bold text-slate-900">
-                  {stats.hoursThisWeek.toFixed(1)}
+                  {formatTime(stats.hoursThisWeek)}
                 </h3>
                 <p className="text-xs text-amber-600">Отработано часов</p>
               </div>

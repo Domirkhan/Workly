@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { format } from 'date-fns';
 
 // Mock data for demo
-const BASE_URL = 'https://workly-backend.onrender.com/api';
+
 
 export const useTimesheetStore = create((set, get) => ({
   records: [],
@@ -55,21 +55,7 @@ export const useTimesheetStore = create((set, get) => ({
       })
     }));
   },
-    fetchTimeRecords: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      const res = await fetch(`${BASE_URL}/timesheet`, {
-        credentials: 'include'
-      });
-      if (!res.ok) {
-        throw new Error('Не удалось загрузить записи');
-      }
-      const data = await res.json();
-      set({ records: data, isLoading: false });
-    } catch (error) {
-      set({ error: error.message, isLoading: false });
-    }
-  },
+  
   fetchEmployeeRecords: async (employeeId) => {
     set({ isLoading: true, error: null });
     try {

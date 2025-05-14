@@ -81,75 +81,57 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    
+
+    // Проверяем, что email и password переданы
     if (!email || !password) {
-      return res.status(400).json({ message: 'Email и пароль обязательны' });
+      return res.status(400).json({ 
+        message: 'Пожалуйста, введите email и пароль' 
+      });
     }
 
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
-      return res.status(401).json({ message: 'Неверный email или пароль' });
+      return res.status(400).json({ 
+        message: 'Неверный email или пароль' 
+      });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ message: 'Неверный email или пароль' });
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(400).json({ 
+        message: 'Неверный email или пароль' 
+      });
     }
 
     const token = generateToken(user._id);
 
-// В функции login:
-res.cookie('token', token, {
-  httpOnly: true,
-  secure: true, // для HTTPS
-  sameSite: 'none', // для cross-site запросов
-  maxAge: 30 * 24 * 60 * 60 * 1000, // 30 дней
-  domain: '.onrender.com' // Добавляем домен
-});
-
-    return res.status(200).json({
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        companyId: user.companyId
-      }
+    // Отправляем токен в куки
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 дней
     });
-  } catch (error) {
-    console.error('Ошибка входа:', error);
-    return res.status(500).json({ message: 'Ошибка сервера при входе' });
-  }
-};
-export const checkAuth = async (req, res) => {
-  try {
-    const token = req.cookies.token;
-    
-    if (!token) {
-      return res.status(401).json({ message: 'Не авторизован' });
-    }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id).select('-password');
-
-    if (!user) {
-      return res.status(401).json({ message: 'Пользователь не найден' });
-    }
-
+    // Отправляем данные пользователя без пароля
     res.json({
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
+        position: user.position,
+        hourlyRate: user.hourlyRate,
+        status: user.status,
         companyId: user.companyId
       }
     });
   } catch (error) {
-    console.error('Ошибка проверки аутентификации:', error);
-    res.status(401).json({ message: 'Недействительный токен' });
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
   }
 };
+
 // Выход
 export const logout = (req, res) => {
   res.cookie('token', '', {

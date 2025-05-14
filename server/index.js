@@ -25,32 +25,8 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
   origin: process.env.CLIENT_URL || 'https://workly-h3jj.onrender.com',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
-  exposedHeaders: ['set-cookie']
+  credentials: true
 }));
-
-// Добавим middleware для логирования
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path}`, {
-    cookies: req.cookies,
-    headers: req.headers
-  });
-  next();
-});
-
-app.use(express.json());
-app.use(cookieParser());
-
-// Обработчик ошибок
-app.use((err, req, res, next) => {
-  console.error('Server Error:', err);
-  res.status(500).json({ 
-    message: err.message || 'Внутренняя ошибка сервера',
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-  });
-});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/employees', employeeRoutes);

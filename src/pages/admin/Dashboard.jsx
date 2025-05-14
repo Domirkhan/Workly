@@ -8,7 +8,7 @@ import { useEmployeeStore } from '../../stores/employeeStore';
 import { useTimesheetStore } from '../../stores/timesheetStore';
 import { format } from 'date-fns';
 import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Bar } from 'recharts';
-
+import { formatTime } from '../../utils/formatTime';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -52,7 +52,7 @@ export default function AdminDashboard() {
           id: employee._id,
           name: employee.name,
           position: employee.position,
-          totalHours: hoursMap[employee._id] || 0,
+          totalHours: Number((hoursMap[employee._id] || 0).toFixed(3)), // Сохраняем большую точность
           hourlyRate: employee.hourlyRate || 0
         }));
 
@@ -240,7 +240,7 @@ export default function AdminDashboard() {
                         {employee.position}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-900 font-medium text-right whitespace-nowrap">
-                        {employee.totalHours.toFixed(1)}
+                       {formatTime(employee.totalHours)}
                       </td>
                     </tr>
                   ))}

@@ -9,6 +9,7 @@ import { useAuthStore } from '../../stores/authStore';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import '@fontsource/roboto/cyrillic.css';
+import { formatTime } from '../../utils/formatTime';
 
 export default function EmployeeTimesheet() {
   const { user } = useAuthStore();
@@ -159,7 +160,7 @@ export default function EmployeeTimesheet() {
             <div className="text-center">
               <p className="text-sm font-medium text-slate-500">Всего часов</p>
               <p className="text-3xl font-bold mt-2">
-                {monthlyData?.summary?.totalHours?.toFixed(1) || '0.0'}
+                {formatTime(monthlyData?.summary?.totalHours)}
               </p>
             </div>
           </CardContent>
@@ -207,9 +208,9 @@ export default function EmployeeTimesheet() {
                     <td className="px-4 py-3 text-sm text-center">
                       {record.clockOut ? format(new Date(record.clockOut), 'HH:mm') : '-'}
                     </td>
-                    <td className="px-4 py-3 text-sm text-right">
-                      {record.totalHours?.toFixed(1) || '-'}
-                    </td>
+                   <td className="px-4 py-3 text-sm text-right">
+                    {record.totalHours ? formatTime(record.totalHours) : '-'}
+                  </td>
                     <td className="px-4 py-3 text-sm text-right">
                       {record.calculatedPay?.toFixed(2) || '-'} тг
                     </td>
@@ -250,10 +251,10 @@ export default function EmployeeTimesheet() {
                     <div className="mt-2 w-full grid grid-cols-2 gap-2 text-sm text-slate-600">
                       <div>
                         <div>Дней: {stats.daysWorked}</div>
-                        <div>Часов: {stats.totalHours.toFixed(1)}</div>
+                        <div>Часов: {formatTime(stats.totalHours)}</div>
                       </div>
                       <div className="text-right">
-                        <div>Ср. часов: {stats.avgHoursPerDay}</div>
+                        <div>Ср. часов: {formatTime(stats.avgHoursPerDay)}</div>
                         <div>{stats.totalPay.toFixed(0)} тг</div>
                       </div>
                     </div>

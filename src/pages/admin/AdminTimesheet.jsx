@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Ca
 import Button from '../../components/ui/Button';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { formatTime } from '../../utils/formatTime';
 
 export default function AdminTimesheet() {
   const [monthlyData, setMonthlyData] = useState([]);
@@ -52,26 +53,34 @@ export default function AdminTimesheet() {
   }, [filterMonth]);
 
   const fetchEmployeeDetails = async (employeeId) => {
-    try {
-      setIsLoading(true);
-      const [year, month] = filterMonth.split('-');
-      const response = await fetch(`/api/timesheet/employee/${employeeId}/monthly?month=${month}&year=${year}`);
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Ошибка при загрузке деталей сотрудника');
+  try {
+    setIsLoading(true);
+    const [year, month] = filterMonth.split('-');
+    
+    const response = await fetch(
+      `/api/timesheet/employee/${employeeId}/monthly?month=${month}&year=${year}`,
+      {
+        headers: {
+          'Accept': 'application/json'
+        }
       }
-      
-      const data = await response.json();
-      setEmployeeDetails(data);
-      setShowModal(true);
-    } catch (err) {
-      console.error('Ошибка загрузки деталей:', err);
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
+    );
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Ошибка при загрузке деталей сотрудника');
     }
-  };
+    
+    const data = await response.json();
+    setEmployeeDetails(data);
+    setShowModal(true);
+  } catch (err) {
+    console.error('Ошибка загрузки деталей:', err);
+    setError(err.message);
+  } finally {
+    setIsLoading(false);
+  }
+};
 // Изменим обработчик клика по архивному месяцу
 const handleArchiveMonthClick = (month) => {
   try {
@@ -182,7 +191,7 @@ const handleArchiveMonthClick = (month) => {
                       {record.clockOut ? format(new Date(record.clockOut), 'HH:mm') : '-'}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      {record.totalHours?.toFixed(1) || '-'}
+                        {record.totalHours ? formatTime(record.totalHours) : '-'}
                     </td>
                     <td className="px-4 py-3 text-right">
                       {record.calculatedPay?.toFixed(2) || '-'} тг
@@ -201,7 +210,7 @@ const handleArchiveMonthClick = (month) => {
                 <tr>
                   <td colSpan="3" className="px-4 py-3 font-medium">Итого:</td>
                   <td className="px-4 py-3 text-right font-medium">
-                    {employeeDetails.totalHours?.toFixed(1) || '0.0'}
+                     {formatTime(employeeDetails.totalHours)}
                   </td>
                   <td className="px-4 py-3 text-right font-medium">
                     {employeeDetails.totalPay?.toFixed(2) || '0.00'} тг
@@ -296,7 +305,7 @@ const handleArchiveMonthClick = (month) => {
                       {item.employee.position}
                     </td>
                     <td className="px-4 py-3 text-sm text-right font-medium text-slate-900">
-                      {item.totalHours.toFixed(1)}
+                      {formatTime(item.totalHours)}
                     </td>
                     <td className="px-4 py-3 text-sm text-right font-medium text-slate-900">
                       {item.totalPay.toFixed(2)} тг
@@ -346,10 +355,10 @@ const handleArchiveMonthClick = (month) => {
                 <div className="mt-2 w-full grid grid-cols-2 gap-2 text-sm text-slate-600">
                   <div>
                     <div>Сотрудников: {stats.employeeCount}</div>
-                    <div>Часов: {stats.totalHours.toFixed(1)}</div>
+                    <div>Часов: {formatTime(stats.totalHours)}</div>
                   </div>
                   <div className="text-right">
-                    <div>Ср. часов: {stats.avgHoursPerEmployee}</div>
+                    <div>Ср. часов: {formatTime(stats.avgHoursPerEmployee)}</div>
                     <div>{stats.totalPay.toFixed(0)} тг</div>
                   </div>
                 </div>
