@@ -23,13 +23,19 @@ export default defineConfig({
     rollupOptions: {
       external: ['@rollup/rollup-linux-x64-gnu'],
       output: {
-        manualChunks: undefined,
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          ui: ['@headlessui/react', 'lucide-react'],
+          charts: ['recharts'],
+          utils: ['date-fns', 'jspdf', 'jspdf-autotable']
+        },
         format: 'es'
       }
     },
     target: 'es2015',
     sourcemap: false,
-    minify: 'terser'
+    minify: 'terser',
+    chunkSizeWarningLimit: 1600
   },
   optimizeDeps: {
     exclude: ['@rollup/rollup-linux-x64-gnu']
