@@ -1,21 +1,37 @@
-const BASE_URL = 'https://workly-backend.onrender.com/api';
+const BASE_URL = '/api'; // Изменить на относительный путь
 
 async function fetchWithAuth(endpoint, options = {}) {
-  const response = await fetch(`${BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    credentials: 'include',
-  });
+  try {
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      credentials: 'include',
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Что-то пошло не так');
+    // Добавляем проверку типа контента
+    const contentType = response.headers.get('content-type');
+    if (!response.ok) {
+      if (contentType && contentType.includes('application/json')) {
+        const error = await response.json();
+        throw new Error(error.message || 'Что-то пошло не так');
+      } else {
+        throw new Error('Ошибка сервера');
+      }
+    }
+
+    // Проверяем наличие данных перед парсингом
+    if (contentType && contentType.includes('application/json')) {
+      return response.json();
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Ошибка запроса:', error);
+    throw error;
   }
-
-  return response.json();
 }
 
 export const authApi = {

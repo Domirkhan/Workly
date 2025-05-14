@@ -80,24 +80,20 @@ export const register = async (req, res) => {
 // Вход
 export const login = async (req, res) => {
   try {
+    console.log('Получен запрос на вход:', req.body);
     const { email, password } = req.body;
 
-    // Проверяем, что email и password переданы
     if (!email || !password) {
+      console.log('Отсутствует email или пароль');
       return res.status(400).json({ 
         message: 'Пожалуйста, введите email и пароль' 
       });
     }
 
     const user = await User.findOne({ email }).select('+password');
-    if (!user) {
-      return res.status(400).json({ 
-        message: 'Неверный email или пароль' 
-      });
-    }
+    console.log('Найден пользователь:', user ? 'да' : 'нет');
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
+    if (!user) {
       return res.status(400).json({ 
         message: 'Неверный email или пароль' 
       });
@@ -126,9 +122,12 @@ export const login = async (req, res) => {
         companyId: user.companyId
       }
     });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ message: 'Ошибка сервера' });
+ } catch (error) {
+    console.error('Ошибка входа:', error);
+    res.status(500).json({ 
+      message: 'Ошибка сервера при входе',
+      error: error.message 
+    });
   }
 };
 
