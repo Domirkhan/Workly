@@ -15,7 +15,7 @@
     "dev:full": "concurrently \"npm run dev\" \"npm run dev:server\"",
     "start": "node server/index.js",
     "clean": "rimraf dist",
-    "prebuild": "npm run clean",
+    "prebuild": "mkdir -p public && echo '/* /index.html 200' > public/_redirects",
     "postinstall": "npm run build"
   },
   "dependencies": {

@@ -6,21 +6,19 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://workly-backend.onrender.com',
+        target: process.env.NODE_ENV === 'production' 
+          ? 'https://workly-backend.onrender.com'
+          : 'http://localhost:5000',
         changeOrigin: true,
-        secure: false
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, '')
       }
     }
   },
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-    sourcemap: true, // Добавляем source maps для отладки
-    rollupOptions: {
-      output: {
-        manualChunks: undefined, // Отключаем ручное разделение чанков
-      }
-    }
+    sourcemap: true
   },
   optimizeDeps: {
     include: [
