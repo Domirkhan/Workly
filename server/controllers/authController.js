@@ -84,32 +84,36 @@ export const login = async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      console.log('Отсутствует email или пароль');
       return res.status(400).json({ 
         message: 'Пожалуйста, введите email и пароль' 
       });
     }
 
     const user = await User.findOne({ email }).select('+password');
-    console.log('Найден пользователь:', user ? 'да' : 'нет');
-
+    
     if (!user) {
       return res.status(400).json({ 
         message: 'Неверный email или пароль' 
       });
     }
 
+    // Проверяем пароль
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(400).json({
+        message: 'Неверный email или пароль'
+      });
+    }
+
     const token = generateToken(user._id);
 
-    // Отправляем токен в куки
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 дней
+      maxAge: 30 * 24 * 60 * 60 * 1000
     });
 
-    // Отправляем данные пользователя без пароля
     res.json({
       user: {
         id: user._id,
@@ -122,7 +126,7 @@ export const login = async (req, res) => {
         companyId: user.companyId
       }
     });
- } catch (error) {
+  } catch (error) {
     console.error('Ошибка входа:', error);
     res.status(500).json({ 
       message: 'Ошибка сервера при входе',
@@ -130,7 +134,6 @@ export const login = async (req, res) => {
     });
   }
 };
-
 // Выход
 export const logout = (req, res) => {
   res.cookie('token', '', {

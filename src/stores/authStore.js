@@ -9,29 +9,35 @@ export const useAuthStore = create((set) => ({
   login: async (credentials) => {
     set({ isLoading: true, error: null });
     try {
-      const res = await fetch('/api/auth/login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         credentials: 'include',
-        body: JSON.stringify({
-          email: credentials.email,
-          password: credentials.password
-        })
+        body: JSON.stringify(credentials)
       });
-      
-      const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.message || 'Ошибка авторизации');
+
+      // Проверяем тип контента
+      const contentType = response.headers.get('content-type');
+      if (!response.ok) {
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Ошибка авторизации');
+        } else {
+          throw new Error('Ошибка сервера');
+        }
       }
-      
-      // Сохраняем данные пользователя
-      localStorage.setItem('user', JSON.stringify(data.user));
-      set({ user: data.user, isLoading: false });
-      
-      return data;
+
+      // Проверяем наличие контента перед парсингом
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+        localStorage.setItem('user', JSON.stringify(data.user));
+        set({ user: data.user, isLoading: false });
+        return data;
+      }
+
+      throw new Error('Неверный формат ответа от сервера');
     } catch (error) {
       set({ error: error.message, isLoading: false });
       throw error;

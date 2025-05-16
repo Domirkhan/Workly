@@ -24,12 +24,12 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173', // Добавьте localhost для разработки
+  origin: process.env.CLIENT_URL || 'https://workly-h3jj.onrender.com',
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Явно указываем методы
-  allowedHeaders: ['Content-Type', 'Authorization'], // Разрешаем необходимые заголовки
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['set-cookie']
 }));
-
 app.use('/api/auth', authRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/timesheet', timesheetRoutes);
