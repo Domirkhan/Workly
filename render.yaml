@@ -1,11 +1,11 @@
 services:
   - type: web
-    name: workly
+    name: workly-backend
     env: node
-    buildCommand: npm install && npm run build
+    buildCommand: npm install
     startCommand: npm run start
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 5000
+        value: 10000

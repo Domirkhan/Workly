@@ -6,16 +6,8 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
-// Импортируем роуты
-import authRoutes from './routes/authRoutes.js';
-import employeeRoutes from './routes/employeeRoutes.js';
-import timesheetRoutes from './routes/timesheetRoutes.js';
-import companyRoutes from './routes/companyRoutes.js';
-import bonusRoutes from './routes/bonusRoutes.js';
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 
 dotenv.config();
 
@@ -42,21 +34,22 @@ app.use('/api/company', companyRoutes);
 app.use('/api/bonuses', bonusRoutes);
 
 // Раздача статических файлов
-app.use(express.static('dist'));
-
-// Обработка SPA роутинга
-app.get('*', (req, res) => {
-  if (!req.path.startsWith('/api')) {
-    res.sendFile(path.resolve(__dirname, '..', 'dist', 'index.html'));
-  }
-});
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '..', 'dist')));
+  
+  app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api')) {
+      res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
+    }
+  });
+}
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('🚀 Подключено к MongoDB'))
   .catch(err => console.error('Ошибка подключения к MongoDB:', err));
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🌐 Сервер запущен на порту ${PORT}`);
 });
