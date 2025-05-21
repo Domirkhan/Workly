@@ -6,7 +6,19 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
-// ... existing imports ...
+// Импортируем роуты
+import authRoutes from './routes/authRoutes.js';
+import employeeRoutes from './routes/employeeRoutes.js';
+import timesheetRoutes from './routes/timesheetRoutes.js';
+import companyRoutes from './routes/companyRoutes.js';
+import bonusRoutes from './routes/bonusRoutes.js';
+
+
+// Добавляем эти строки для получения __dirname в ES модулях
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config();
 
 const app = express();
 
@@ -39,4 +51,12 @@ app.get('*', (req, res) => {
   }
 });
 
-// ... rest of the code ...
+// MongoDB connection
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('🚀 Подключено к MongoDB'))
+  .catch(err => console.error('Ошибка подключения к MongoDB:', err));
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`🌐 Сервер запущен на порту ${PORT}`);
+});
