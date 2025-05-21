@@ -1,10 +1,18 @@
 import express from 'express';
-import { register, login, logout } from '../controllers/authController.js';
+import { auth } from '../middleware/authMiddleware.js';
+import { 
+  createBonus,
+  getEmployeeBonuses
+} from '../controllers/bonusController.js';
 
 const router = express.Router();
 
-router.post('/register', register);
-router.post('/login', login);
-router.post('/logout', logout);
+router.use(auth); // Защищаем все маршруты
+
+// Создание премии/штрафа
+router.post('/', createBonus);
+
+// Получение премий/штрафов сотрудника
+router.get('/employee/:employeeId', getEmployeeBonuses);
 
 export default router;
