@@ -6,8 +6,16 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
+// Импортируем роуты
+import authRoutes from './routes/authRoutes.js';
+import employeeRoutes from './routes/employeeRoutes.js';
+import timesheetRoutes from './routes/timesheetRoutes.js';
+import companyRoutes from './routes/companyRoutes.js';
+import bonusRoutes from './routes/bonusRoutes.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
 
 dotenv.config();
 
