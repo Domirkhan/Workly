@@ -24,7 +24,7 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'https://workly.ct.ws',
+  origin: process.env.CLIENT_URL || 'https://workly.kz',
   credentials: true
 }));
 
