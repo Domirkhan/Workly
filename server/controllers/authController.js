@@ -80,9 +80,9 @@ export const register = async (req, res) => {
 // Вход
 export const login = async (req, res) => {
   try {
-    console.log('Получен запрос на вход:', req.body);
     const { email, password } = req.body;
 
+    // Проверяем, что email и password переданы
     if (!email || !password) {
       return res.status(400).json({ 
         message: 'Пожалуйста, введите email и пароль' 
@@ -90,30 +90,30 @@ export const login = async (req, res) => {
     }
 
     const user = await User.findOne({ email }).select('+password');
-    
     if (!user) {
       return res.status(400).json({ 
         message: 'Неверный email или пароль' 
       });
     }
 
-    // Проверяем пароль
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res.status(400).json({
-        message: 'Неверный email или пароль'
+      return res.status(400).json({ 
+        message: 'Неверный email или пароль' 
       });
     }
 
     const token = generateToken(user._id);
 
+    // Отправляем токен в куки
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 30 * 24 * 60 * 60 * 1000
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 дней
     });
 
+    // Отправляем данные пользователя без пароля
     res.json({
       user: {
         id: user._id,
@@ -127,13 +127,11 @@ export const login = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Ошибка входа:', error);
-    res.status(500).json({ 
-      message: 'Ошибка сервера при входе',
-      error: error.message 
-    });
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Ошибка сервера' });
   }
 };
+
 // Выход
 export const logout = (req, res) => {
   res.cookie('token', '', {

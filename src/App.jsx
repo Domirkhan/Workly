@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { createContext } from 'react';
 import { useAuthStore } from './stores/authStore';
-import { BrowserRouter } from 'react-router-dom';
+
 
 // Pages
 import Login from './pages/Login';
@@ -36,7 +36,7 @@ function App() {
 
   return (
    
-     <BrowserRouter>
+     
         <Routes>
           {/* Публичные маршруты */}
           <Route path="/" element={<LandingPage />} />
@@ -118,7 +118,7 @@ function App() {
           {/* 404 страница */}
           <Route path="*" element={<NotFound />} />
         </Routes>
-   </BrowserRouter>
+   
     
   );
 }

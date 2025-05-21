@@ -9,29 +9,28 @@ export const useAuthStore = create((set) => ({
   login: async (credentials) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await fetch('/api/auth/login', {
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         credentials: 'include',
-        body: JSON.stringify(credentials)
+        body: JSON.stringify({
+          email: credentials.email,
+          password: credentials.password
+        })
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({
-          message: 'Ошибка сервера'
-        }));
-        throw new Error(errorData.message || 'Ошибка входа');
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.message || 'Ошибка авторизации');
       }
-
-      const data = await response.json();
-      if (!data || !data.user) {
-        throw new Error('Некорректный ответ от сервера');
-      }
-
+      
+      // Сохраняем данные пользователя
       localStorage.setItem('user', JSON.stringify(data.user));
       set({ user: data.user, isLoading: false });
+      
       return data;
     } catch (error) {
       set({ error: error.message, isLoading: false });

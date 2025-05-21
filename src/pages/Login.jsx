@@ -8,26 +8,19 @@ import { useAuthStore } from '../stores/authStore';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, isLoading, error: authError } = useAuthStore();
+  const { login, isLoading, error } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      setError(''); // Очищаем ошибки перед запросом
-      const response = await login({ email, password });
-      const user = response.user;
-      
-      if (user && user.role) {
-        navigate(user.role === 'admin' ? '/admin' : '/employee');
-      } else {
-        throw new Error('Некорректные данные пользователя');
-      }
-    } catch (err) {
-      console.error('Ошибка входа:', err);
-      setError(err.message || 'Ошибка при входе');
+      // Отправляем данные в виде объекта
+      await login({ email, password });
+      const user = useAuthStore.getState().user;
+      navigate(user.role === 'admin' ? '/admin' : '/employee');
+    } catch (error) {
+      console.error('Ошибка входа:', error);
     }
   };
 

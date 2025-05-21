@@ -1,5 +1,0 @@
-Users\damir\Workly\netlify.toml
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200

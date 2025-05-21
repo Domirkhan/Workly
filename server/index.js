@@ -24,13 +24,8 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-  origin: ['https://workly-h3jj.onrender.com', 'http://localhost:5173'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  exposedHeaders: ['Set-Cookie'],
-  preflightContinue: true,
-  optionsSuccessStatus: 204
+  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  credentials: true
 }));
 
 app.use('/api/auth', authRoutes);
@@ -39,19 +34,7 @@ app.use('/api/timesheet', timesheetRoutes);
 app.use('/api/company', companyRoutes);
 app.use('/api/bonuses', bonusRoutes);
 
-app.use(express.static(path.join(__dirname, '..', 'dist')));
 
-// Handle SPA routing
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
-});
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '..', 'dist')));
-  
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
-  });
-}
 
 // Проверяем, что переменные окружения загружены
 console.log('MongoDB URI:', process.env.MONGODB_URI);
@@ -72,16 +55,3 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🌐 Сервер запущен на порту ${PORT}`);
 });
-
-if (process.env.NODE_ENV === 'production') {
-  const __dirname = path.resolve();
-  app.use(express.static(path.join(__dirname, 'dist')));
-  
-  // Обработка всех остальных маршрутов
-  app.get('*', (req, res) => {
-    if (req.url.startsWith('/api')) {
-      return; // Пропускаем API запросы
-    }
-    res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
-  });
-}
