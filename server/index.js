@@ -25,6 +25,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 // CORS настройки
+
 app.use(cors({
   origin: ['https://workly-h3jj.onrender.com', 'http://localhost:5173'],
   credentials: true,

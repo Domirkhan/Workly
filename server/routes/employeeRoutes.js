@@ -13,7 +13,7 @@ const router = express.Router();
 router.use(auth); // Защищаем все маршруты
 
 router.get('/', getEmployees);
-router.get('/:id', getEmployeeById);
+router.get('/employee/:id', getEmployeeById);
 router.post('/', createEmployee); // Новый маршрут для создания сотрудника
 router.put('/:id', updateEmployee);
 router.delete('/:id', deleteEmployee);
