@@ -5,13 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "NODE_ENV=production vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "dev:client": "vite",
     "dev:server": "cd server && npm run dev",
     "dev:both": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
     "start": "node server/index.js",
-    "postinstall": "npm run build"
+    "postinstall": "npm run build && cd server && npm install"
   },
   "dependencies": {
     "@fontsource/roboto": "^5.2.5",
