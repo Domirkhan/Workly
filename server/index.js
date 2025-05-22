@@ -50,12 +50,12 @@ const PORT = process.env.PORT || 5000;
 // Подключение к базе данных и запуск сервера
 const startServer = async () => {
   try {
-    await connectDB(); // Подключаемся к MongoDB
-    app.listen(PORT, () => {
-      console.log(` Сервер запущен на порту ${PORT}`);
+    await connectDB();
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Сервер запущен на порту ${PORT}`);
     });
   } catch (error) {
-    console.error(' Ошибка при запуске сервера:', error);
+    console.error('❌ Ошибка при запуске сервера:', error);
     process.exit(1);
   }
 };
