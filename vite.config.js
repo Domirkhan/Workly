@@ -28,10 +28,11 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api/v1': {
-        target: process.env.VITE_API_URL || 'https://workly-backend.onrender.com',
+      '/api': {
+        target: 'http://localhost:5000',
         changeOrigin: true,
-        secure: false
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, '')
       }
     }
   }

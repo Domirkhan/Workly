@@ -9,3 +9,5 @@ services:
         value: production
       - key: PORT
         value: 5000
+      - key: CLIENT_URL
+        value: https://workly-zd8z.onrender.com
