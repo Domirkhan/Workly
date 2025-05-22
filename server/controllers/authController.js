@@ -77,7 +77,6 @@ export const register = async (req, res) => {
   }
 };
 
-// Вход
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -107,9 +106,9 @@ export const login = async (req, res) => {
 
     res.cookie('token', token, {
       httpOnly: true,
-      secure: true, // для HTTPS
-      sameSite: 'none', // для cross-site запросов
-      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 дней
+      secure: true,
+      sameSite: 'none',
+      maxAge: 30 * 24 * 60 * 60 * 1000
     });
 
     res.json({

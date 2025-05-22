@@ -12,7 +12,7 @@ export const useAuthStore = create(
 checkAuth: async () => {
   try {
     set({ isLoading: true, error: null });
-    const response = await fetch(`${process.env.VITE_API_URL}/api/v1/auth/me`, {
+    const response = await fetch('https://workly-backend.onrender.com/api/v1/auth/me', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'
@@ -37,7 +37,7 @@ checkAuth: async () => {
 login: async (credentials) => {
   try {
     set({ isLoading: true, error: null });
-    const response = await fetch(`${process.env.VITE_API_URL}/api/v1/auth/login`, {
+    const response = await fetch('https://workly-backend.onrender.com/api/v1/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -46,12 +46,12 @@ login: async (credentials) => {
       body: JSON.stringify(credentials)
     });
 
+    const data = await response.json();
+    
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Неверный email или пароль');
+      throw new Error(data.message || 'Неверный email или пароль');
     }
 
-    const data = await response.json();
     set({ user: data.user, isLoading: false });
     return data.user;
   } catch (error) {

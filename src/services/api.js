@@ -1,6 +1,5 @@
-const BASE_URL = process.env.VITE_API_URL || 'http://localhost:5000';
+const BASE_URL = 'https://workly-backend.onrender.com'; // Убираем process.env
 
-// Базовая функция для выполнения fetch запросов
 async function fetchWithAuth(endpoint, options = {}) {
   try {
     const response = await fetch(`${BASE_URL}/api/v1${endpoint}`, {
@@ -9,7 +8,7 @@ async function fetchWithAuth(endpoint, options = {}) {
         'Content-Type': 'application/json',
         ...options.headers,
       },
-      credentials: 'include',
+      credentials: 'include'
     });
 
     if (!response.ok) {
