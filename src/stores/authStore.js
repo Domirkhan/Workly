@@ -8,60 +8,58 @@ export const useAuthStore = create(
       isLoading: false,
       error: null,
 
-      // Метод для проверки авторизации
-      checkAuth: async () => {
-        try {
-          set({ isLoading: true, error: null });
-          const response = await fetch('/api/v1/auth/me', {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            credentials: 'include'
-          });
 
-          const data = await response.json();
-          
-          if (!response.ok) {
-            throw new Error(data.message || 'Ошибка авторизации');
-          }
-
-          set({ user: data.user, isLoading: false });
-          return data.user;
-        } catch (error) {
-          console.error('Ошибка проверки авторизации:', error);
-          set({ user: null, isLoading: false });
-          return null;
-        }
+checkAuth: async () => {
+  try {
+    set({ isLoading: true, error: null });
+    const response = await fetch(`${process.env.VITE_API_URL}/api/v1/auth/me`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
       },
+      credentials: 'include'
+    });
 
-      // Метод для входа
-      login: async (credentials) => {
-        try {
-          set({ isLoading: true, error: null });
-          const response = await fetch('/api/v1/auth/login', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            credentials: 'include',
-            body: JSON.stringify(credentials)
-          });
+    if (!response.ok) {
+      throw new Error('Ошибка авторизации');
+    }
 
-          const data = await response.json();
+    const data = await response.json();
+    set({ user: data.user, isLoading: false });
+    return data.user;
+  } catch (error) {
+    console.error('Ошибка проверки авторизации:', error);
+    set({ user: null, isLoading: false });
+    return null;
+  }
+},
 
-          if (!response.ok) {
-            throw new Error(data.message || 'Неверный email или пароль');
-          }
-
-          set({ user: data.user, isLoading: false });
-          return data.user;
-        } catch (error) {
-          console.error('Ошибка входа:', error);
-          set({ error: error.message, isLoading: false });
-          throw error;
-        }
+login: async (credentials) => {
+  try {
+    set({ isLoading: true, error: null });
+    const response = await fetch(`${process.env.VITE_API_URL}/api/v1/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
       },
+      credentials: 'include',
+      body: JSON.stringify(credentials)
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Неверный email или пароль');
+    }
+
+    const data = await response.json();
+    set({ user: data.user, isLoading: false });
+    return data.user;
+  } catch (error) {
+    console.error('Ошибка входа:', error);
+    set({ error: error.message, isLoading: false });
+    throw error;
+  }
+},
 
       // Метод для регистрации
       register: async (userData) => {

@@ -23,7 +23,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
-  origin: [process.env.CLIENT_URL, 'http://localhost:5173'],
+  origin: true, // Разрешаем все origins в dev режиме
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']

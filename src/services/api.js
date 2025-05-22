@@ -1,9 +1,9 @@
-const BASE_URL = '/api/v1';
+const BASE_URL = process.env.VITE_API_URL || 'http://localhost:5000';
 
 // Базовая функция для выполнения fetch запросов
 async function fetchWithAuth(endpoint, options = {}) {
   try {
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
+    const response = await fetch(`${BASE_URL}/api/v1${endpoint}`, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
@@ -13,14 +13,16 @@ async function fetchWithAuth(endpoint, options = {}) {
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({
+        message: 'Ошибка сервера'
+      }));
       throw new Error(error.message || 'Произошла ошибка');
     }
 
     return response.json();
   } catch (error) {
     console.error('API Error:', error);
-    throw new Error('Ошибка при выполнении запроса');
+    throw error;
   }
 }
 
