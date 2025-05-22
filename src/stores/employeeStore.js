@@ -9,30 +9,29 @@ export const useEmployeeStore = create(
       isLoading: false,
       error: null,
       
-      fetchEmployees: async () => {
-        set({ isLoading: true, error: null });
-        try {
-          const response = await fetch('/api/v1/employees', {
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            credentials: 'include'
-          });
-          
-          const data = await response.json();
-          
-          if (!response.ok) {
-            throw new Error(data.message || 'Не удалось загрузить сотрудников');
-          }
-          
-          set({ employees: data, isLoading: false });
-          return data;
-        } catch (error) {
-          console.error('Ошибка загрузки сотрудников:', error);
-          set({ error: error.message, isLoading: false });
-          throw error;
-        }
+fetchEmployees: async () => {
+  set({ isLoading: true, error: null });
+  try {
+    const response = await fetch('https://workly-backend.onrender.com/api/v1/employees', {
+      headers: {
+        'Content-Type': 'application/json'
       },
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      throw new Error('Не удалось загрузить сотрудников');
+    }
+    
+    const data = await response.json();
+    set({ employees: data, isLoading: false });
+    return data;
+  } catch (error) {
+    console.error('Ошибка загрузки сотрудников:', error);
+    set({ error: error.message, isLoading: false });
+    throw error;
+  }
+},
       
       addEmployee: async (employeeData) => {
         set({ isLoading: true, error: null });

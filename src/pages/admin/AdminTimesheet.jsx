@@ -19,35 +19,50 @@ export default function AdminTimesheet() {
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
-    const fetchMonthlyData = async () => {
-      setIsLoading(true);
-      try {
-        console.log('Fetching data for month:', filterMonth); // Добавляем лог
-        const [year, month] = filterMonth.split('-');
-        const response = await fetch(`/api/v1/timesheet/monthly?month=${month}&year=${year}`);
-        
-        if (!response.ok) {
-          throw new Error('Ошибка при загрузке данных');
-        }
-        
-        const data = await response.json();
-        console.log('Received data:', data); // Добавляем лог
-        setMonthlyData(data);
-        
-      // Загружаем архивные месяцы
-      const archiveResponse = await fetch('/api/v1/timesheet/archive-months');
-      if (archiveResponse.ok) {
-        const archiveData = await archiveResponse.json();
-        console.log('Archive months:', archiveData); // Добавляем лог
-        setArchiveMonths(archiveData);
+const fetchMonthlyData = async () => {
+  setIsLoading(true);
+  try {
+    console.log('Fetching data for month:', filterMonth);
+    const [year, month] = filterMonth.split('-');
+    const response = await fetch(
+      `https://workly-backend.onrender.com/api/v1/timesheet/monthly?month=${month}&year=${year}`,
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
       }
-    } catch (err) {
-      console.error('Ошибка загрузки:', err);
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
+    );
+    
+    if (!response.ok) {
+      throw new Error('Ошибка при загрузке данных');
     }
-  };
+    
+    const data = await response.json();
+    setMonthlyData(data);
+    
+    // Загружаем архивные месяцы
+    const archiveResponse = await fetch(
+      'https://workly-backend.onrender.com/api/v1/timesheet/archive-months',
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      }
+    );
+    
+    if (archiveResponse.ok) {
+      const archiveData = await archiveResponse.json();
+      setArchiveMonths(archiveData);
+    }
+  } catch (err) {
+    console.error('Ошибка загрузки:', err);
+    setError(err.message);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
     fetchMonthlyData();
   }, [filterMonth]);

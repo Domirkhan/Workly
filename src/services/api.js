@@ -1,8 +1,8 @@
-const BASE_URL = 'https://workly-backend.onrender.com'; // Убираем process.env
+const BASE_URL = 'https://workly-backend.onrender.com/api/v1';
 
 async function fetchWithAuth(endpoint, options = {}) {
   try {
-    const response = await fetch(`${BASE_URL}/api/v1${endpoint}`, {
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
