@@ -29,24 +29,21 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
   exposedHeaders: ['Set-Cookie']
 }));
-app.options('*', cors());
-// API routes
+
+// Важно: сначала подключаем API маршруты
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/employees', employeeRoutes);
 app.use('/api/v1/timesheet', timesheetRoutes);
 app.use('/api/v1/company', companyRoutes);
 app.use('/api/v1/bonuses', bonusRoutes);
 
-// Статические файлы и SPA роутинг
+// Раздача статических файлов в production
 if (process.env.NODE_ENV === 'production') {
-  // Раздача статических файлов
   app.use(express.static(path.join(__dirname, '..', 'dist')));
   
-  // Все остальные запросы перенаправляем на index.html
-  app.get('*', (req, res) => {
-    if (!req.path.startsWith('/api')) {
-      res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
-    }
+  // Важно: этот маршрут должен быть последним
+  app.get('/*', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
   });
 }
 
