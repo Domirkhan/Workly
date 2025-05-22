@@ -10,7 +10,7 @@ export default function BonusHistory({ employeeId }) {
   useEffect(() => {
     const fetchBonuses = async () => {
       try {
-        const response = await fetch(`/api/bonuses/employee/${employeeId}`);
+        const response = await fetch(`/api/v1/bonuses/employee/${employeeId}`);
         const data = await response.json();
         setBonuses(data);
       } catch (error) {

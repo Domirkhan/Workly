@@ -37,7 +37,7 @@ export default function EmployeeDashboard() {
         await fetchEmployeeRecords(user.id);
         
         // Получаем статистику
-        const response = await fetch('/api/timesheet/employee/stats', {
+        const response = await fetch('/api/v1/timesheet/employee/stats', {
           headers: {
             'Content-Type': 'application/json',
             // Добавьте заголовки авторизации, если требуется

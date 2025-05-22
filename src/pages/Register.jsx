@@ -21,7 +21,7 @@ export default function Register() {
   const [error, setError] = useState('');
   const [formErrors, setFormErrors] = useState({});
 
-  // Добавляем функцию handleChange
+ 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -29,7 +29,7 @@ export default function Register() {
       [name]: value
     }));
     
-    // Очищаем ошибки при изменении поля
+    
     if (formErrors[name]) {
       setFormErrors(prev => ({
         ...prev,
@@ -91,7 +91,6 @@ export default function Register() {
                     <option value="employee">Сотрудником</option>
                   </select>
                 </div>
-
                 <div>
                   <label htmlFor="name" className="form-label">
                     Полное имя
@@ -109,7 +108,6 @@ export default function Register() {
                     <p className="form-error">{formErrors.name}</p>
                   )}
                 </div>
-
                 <div>
                   <label htmlFor="email" className="form-label">
                     Email
@@ -127,7 +125,6 @@ export default function Register() {
                     <p className="form-error">{formErrors.email}</p>
                   )}
                 </div>
-
                 <div>
                   <label htmlFor="password" className="form-label">
                     Пароль
@@ -145,7 +142,6 @@ export default function Register() {
                     <p className="form-error">{formErrors.password}</p>
                   )}
                 </div>
-
                 <div>
                   <label htmlFor="confirmPassword" className="form-label">
                     Подтвердите пароль
@@ -163,7 +159,6 @@ export default function Register() {
                     <p className="form-error">{formErrors.confirmPassword}</p>
                   )}
                 </div>
-
                 {formData.role === 'admin' ? (
                   <div>
                     <label htmlFor="companyName" className="form-label">
@@ -183,7 +178,6 @@ export default function Register() {
                     )}
                   </div>
                 ): null}
-
                 <Button 
                   type="submit" 
                   fullWidth 

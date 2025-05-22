@@ -15,10 +15,11 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Отправляем данные в виде объекта
       await login({ email, password });
       const user = useAuthStore.getState().user;
-      navigate(user.role === 'admin' ? '/admin' : '/employee');
+      if (user) {
+        navigate(user.role === 'admin' ? '/admin' : '/employee');
+      }
     } catch (error) {
       console.error('Ошибка входа:', error);
     }
@@ -49,7 +50,6 @@ export default function Login() {
                 {error}
               </div>
             )}
-            
             <form onSubmit={handleSubmit}>
               <div className="space-y-4">
                 <div>
@@ -66,7 +66,6 @@ export default function Login() {
                     required
                   />
                 </div>
-
                 <div>
                   <label htmlFor="password" className="form-label">
                     Пароль
@@ -81,7 +80,6 @@ export default function Login() {
                     required
                   />
                 </div>
-
                 <Button 
                   type="submit" 
                   fullWidth 

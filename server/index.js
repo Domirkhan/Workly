@@ -1,63 +1,63 @@
 import express from 'express';
-import mongoose from 'mongoose';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import path from 'path';
-
-// Импортируем роуты
+import morgan from 'morgan';
 import authRoutes from './routes/authRoutes.js';
 import employeeRoutes from './routes/employeeRoutes.js';
 import timesheetRoutes from './routes/timesheetRoutes.js';
 import companyRoutes from './routes/companyRoutes.js';
 import bonusRoutes from './routes/bonusRoutes.js';
+import connectDB from './config/db.js';
 
+// Получаем путь к текущему файлу
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config();
+// Загружаем .env файл
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 const app = express();
 
 // Middleware
 app.use(express.json());
 app.use(cookieParser());
-
-// CORS настройки
-
+app.use(express.urlencoded({ extended: true }));
+app.use(morgan("dev"));
 app.use(cors({
-  origin: ['http://89.46.33.244', 'http://localhost:5173'],
+ origin: process.env.CLIENT_URL.replace(/\/$/, ''), // Удаляем слеш в конце если есть
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
-  exposedHeaders: ['Set-Cookie']
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
-// API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/employees', employeeRoutes);
-app.use('/api/timesheet', timesheetRoutes);
-app.use('/api/company', companyRoutes);
-app.use('/api/bonuses', bonusRoutes);
-
-// Раздача статических файлов
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '..', 'dist')));
   
-  app.get('*', (req, res) => {
-    if (!req.path.startsWith('/api')) {
-      res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
-    }
-  });
-}
+// Маршруты
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/employees', employeeRoutes);
+app.use('/api/v1/timesheet', timesheetRoutes);
+app.use('/api/v1/company', companyRoutes);
+app.use('/api/v1/bonuses', bonusRoutes);
 
-// MongoDB connection
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('🚀 Подключено к MongoDB'))
-  .catch(err => console.error('Ошибка подключения к MongoDB:', err));
+// Тестовый маршрут
+app.get('/api/v1/health', (req, res) => {
+  res.json({ status: 'ok', message: 'Server is running' });
+});
 
-const PORT = process.env.PORT || 3000
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server listening on port ${PORT}`)
-})
+const PORT = process.env.PORT || 5000;
+
+// Подключение к базе данных и запуск сервера
+const startServer = async () => {
+  try {
+    await connectDB(); // Подключаемся к MongoDB
+    app.listen(PORT, () => {
+      console.log(` Сервер запущен на порту ${PORT}`);
+    });
+  } catch (error) {
+    console.error(' Ошибка при запуске сервера:', error);
+    process.exit(1);
+  }
+};
+
+startServer();

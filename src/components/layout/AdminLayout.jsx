@@ -18,9 +18,9 @@ export default function AdminLayout({ children }) {
   const navigationItems = [
     { name: 'Главная', path: '/admin', icon: <BarChart3 size={20} /> },
     { name: 'Сотрудники', path: '/admin/employees', icon: <Users size={20} /> },
-    { name: 'QR-код', path: '/admin/qr-generator', icon: <QrCode size={20} /> }, // Добавляем этот пункт
+    { name: 'QR-код', path: '/admin/qr-generator', icon: <QrCode size={20} /> }, 
     { name: 'Табели', path: '/admin/timesheets', icon: <ClipboardList size={20} /> },
-    { name: 'Настройки', path: '/admin/settings', icon: <Settings size={20} /> },
+
   ];
   
   return (
@@ -35,8 +35,7 @@ export default function AdminLayout({ children }) {
           {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
-      
-      {/* Мобильное боковое меню */}
+     {/* Мобильное боковое меню */}
       {isMobileMenuOpen && (
         <div className="md:hidden bg-white border-b border-slate-200 p-4">
           <nav className="space-y-1">
@@ -65,7 +64,6 @@ export default function AdminLayout({ children }) {
           </nav>
         </div>
       )}
-      
       {/* Десктопное боковое меню */}
       <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
         <div className="flex flex-col flex-grow pt-5 bg-white overflow-y-auto border-r border-slate-200">

@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PlusCircle, Clock } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
+import { format } from 'date-fns';
+import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Bar } from 'recharts';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
-import { useEmployeeStore } from '../../stores/employeeStore';
-import { useTimesheetStore } from '../../stores/timesheetStore';
-import { format } from 'date-fns';
-import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Bar } from 'recharts';
 import { formatTime } from '../../utils/formatTime';
+import { employeeApi, timesheetApi } from '../../services/api';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -23,79 +22,79 @@ export default function AdminDashboard() {
   });
 
   useEffect(() => {
-    const fetchData = async () => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
       setIsLoading(true);
-      try {
-        // Загружаем данные сотрудников
-        const employeesResponse = await fetch('/api/employees');
-        const employeesData = await employeesResponse.json();
+      setError(null);
 
-        // Загружаем записи времени
-        const recordsResponse = await fetch('/api/timesheet/all');
-        const recordsData = await recordsResponse.json();
+      // Получаем данные сотрудников и записи времени параллельно
+      const [employeesData, timesheetData] = await Promise.all([
+        employeeApi.getAll(),
+        timesheetApi.getAll()
+      ]);
 
-        // Расчёт часов по сотрудникам
-        const hoursMap = {};
-        let totalRevenue = 0;
+      // Расчет часов по сотрудникам
+      const hoursMap = {};
+      let totalRevenue = 0;
 
-        recordsData.forEach((record) => {
-          if (record.totalHours && record.employee?._id) {
-            hoursMap[record.employee._id] = (hoursMap[record.employee._id] || 0) + record.totalHours;
-            if (record.calculatedPay) {
-              totalRevenue += record.calculatedPay;
-            }
+      timesheetData.forEach((record) => {
+        if (record.totalHours && record.employeeId) {
+          hoursMap[record.employeeId] = (hoursMap[record.employeeId] || 0) + record.totalHours;
+          if (record.calculatedPay) {
+            totalRevenue += record.calculatedPay;
           }
-        });
+        }
+      });
 
-        // Создаем массив с данными сотрудников и их часами
-        const employeesWithHours = employeesData.map(employee => ({
-          id: employee._id,
-          name: employee.name,
-          position: employee.position,
-          totalHours: Number((hoursMap[employee._id] || 0).toFixed(3)), // Сохраняем большую точность
-          hourlyRate: employee.hourlyRate || 0
+      // Формируем данные сотрудников с часами
+      const employeesWithHours = employeesData.map(employee => ({
+        id: employee.id,
+        name: employee.name,
+        position: employee.position,
+        totalHours: Number((hoursMap[employee.id] || 0).toFixed(2)),
+        hourlyRate: employee.hourlyRate || 0
+      }));
+
+      // Сортировка по убыванию часов
+      employeesWithHours.sort((a, b) => b.totalHours - a.totalHours);
+      setEmployeeHours(employeesWithHours);
+
+      // Расчет данных для графика
+      const dailyHours = {};
+      timesheetData.forEach((record) => {
+        if (record.totalHours) {
+          const dateKey = format(new Date(record.date), 'yyyy-MM-dd');
+          dailyHours[dateKey] = (dailyHours[dateKey] || 0) + record.totalHours;
+        }
+      });
+
+      // Форматирование данных для графика
+      const chartData = Object.entries(dailyHours)
+        .sort(([a], [b]) => new Date(a) - new Date(b))
+        .map(([date, hours]) => ({
+          date: format(new Date(date), 'dd.MM'),
+          hours: Number(hours.toFixed(1))
         }));
 
-        // Сортируем по убыванию часов
-        employeesWithHours.sort((a, b) => b.totalHours - a.totalHours);
-        setEmployeeHours(employeesWithHours);
+      setDailyHoursData(chartData);
 
-        // Расчёт суммарных часов по датам для графика
-        const dailyHours = {};
-        recordsData.forEach((record) => {
-          if (record.totalHours) {
-            const dateKey = format(new Date(record.date), 'yyyy-MM-dd');
-            dailyHours[dateKey] = (dailyHours[dateKey] || 0) + record.totalHours;
-          }
-        });
+      // Обновление статистики
+      setStats({
+        totalEmployees: employeesData.length,
+        activeEmployees: employeesData.filter(emp => emp.status === 'active').length,
+        totalRevenue
+      });
 
-        // Сортируем даты и форматируем для графика
-        const chartData = Object.entries(dailyHours)
-          .sort(([a], [b]) => new Date(a) - new Date(b))
-          .map(([date, hours]) => ({
-            date: format(new Date(date), 'dd.MM'),
-            hours: Number(hours.toFixed(1))
-          }));
-
-        setDailyHoursData(chartData);
-
-        // Обновляем статистику
-        setStats({
-          totalEmployees: employeesData.length,
-          activeEmployees: employeesData.filter(emp => emp.status === 'active').length,
-          totalRevenue: totalRevenue
-        });
-
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Ошибка загрузки данных:', error);
-        setError(error.message);
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+    } catch (error) {
+      console.error('Ошибка загрузки данных:', error);
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -121,7 +120,7 @@ export default function AdminDashboard() {
     <AdminLayout>
       <div className="mb-8 flex flex-col sm:flex-row justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 ">Главная</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Главная</h1>
           <p className="text-slate-500">Добро пожаловать, Админ!</p>
         </div>
         <div>
@@ -135,10 +134,10 @@ export default function AdminDashboard() {
           </Button>
         </div>
       </div>
-      
-       {/* Обновленные карточки статистики */}
-       <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-12">
-        <Card className="bg-white border border-slate-200 overflow-hidden hover:shadow-lg transition-shadow duration-200">
+
+      {/* Статистика */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-12">
+        <Card className="bg-white border border-slate-200 hover:shadow-lg transition-shadow">
           <CardContent className="p-8">
             <div className="flex flex-col items-center text-center">
               <p className="text-sm font-medium text-slate-600 mb-3">Всего сотрудников</p>
@@ -147,7 +146,7 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white border border-slate-200 overflow-hidden hover:shadow-lg transition-shadow duration-200">
+        <Card className="bg-white border border-slate-200 hover:shadow-lg transition-shadow">
           <CardContent className="p-8">
             <div className="flex flex-col items-center text-center">
               <p className="text-sm font-medium text-slate-600 mb-3">Активных сотрудников</p>
@@ -156,7 +155,7 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white border border-slate-200 overflow-hidden hover:shadow-lg transition-shadow duration-200">
+        <Card className="bg-white border border-slate-200 hover:shadow-lg transition-shadow">
           <CardContent className="p-8">
             <div className="flex flex-col items-center text-center">
               <p className="text-sm font-medium text-slate-600 mb-3">Общая выручка</p>
@@ -165,10 +164,11 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
-      
-      {/* Обновленные графики */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <Card className="bg-white border border-slate-200 overflow-hidden hover:shadow-lg transition-shadow duration-200">
+
+      {/* Графики */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* График часов */}
+        <Card className="bg-white border border-slate-200 hover:shadow-lg transition-shadow">
           <CardHeader className="p-6 border-b border-slate-100">
             <CardTitle className="text-xl font-light text-slate-800">
               Тренд отработанных часов
@@ -206,8 +206,8 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        {/* Обновленная таблица рейтинга */}
-        <Card className="bg-white border border-slate-200 overflow-hidden hover:shadow-lg transition-shadow duration-200">
+        {/* Таблица рейтинга */}
+        <Card className="bg-white border border-slate-200 hover:shadow-lg transition-shadow">
           <CardHeader className="p-6 border-b border-slate-100">
             <CardTitle className="text-xl font-light text-slate-800">
               Рейтинг по отработанным часам
@@ -218,16 +218,24 @@ export default function AdminDashboard() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-100">
-                    <th className="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Место</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Сотрудник</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Должность</th>
-                    <th className="px-6 py-4 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Часы</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Место
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Сотрудник
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Должность
+                    </th>
+                    <th className="px-6 py-4 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Часы
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {employeeHours.map((employee, index) => (
                     <tr 
-                      key={employee.id} 
+                      key={employee.id || index}
                       className="hover:bg-slate-50 transition-colors duration-150"
                     >
                       <td className="px-6 py-4 text-sm text-slate-500 whitespace-nowrap">
@@ -240,7 +248,7 @@ export default function AdminDashboard() {
                         {employee.position}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-900 font-medium text-right whitespace-nowrap">
-                       {formatTime(employee.totalHours)}
+                        {formatTime(employee.totalHours)}
                       </td>
                     </tr>
                   ))}

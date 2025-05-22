@@ -17,7 +17,7 @@ export default function EmployeeProfile() {
   useEffect(() => {
     async function fetchEmployee() {
       try {
-        const res = await fetch(`/api/employees/${id}`);
+        const res = await fetch(`/api/v1/employees/${id}`);
         if (!res.ok) {
           throw new Error('Failed to fetch employee data');
         }
@@ -43,7 +43,7 @@ export default function EmployeeProfile() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`/api/employees/${id}`, {
+      const res = await fetch(`/api/v1/employees/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -63,7 +63,7 @@ export default function EmployeeProfile() {
   const handleDelete = async () => {
     if (window.confirm('Вы уверены, что хотите удалить этого сотрудника?')) {
       try {
-        const res = await fetch(`/api/employees/${id}`, { method: 'DELETE' });
+        const res = await fetch(`/api/v1/employees/${id}`, { method: 'DELETE' });
         if (!res.ok) {
           throw new Error('Delete failed');
         }

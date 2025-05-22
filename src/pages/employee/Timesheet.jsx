@@ -25,7 +25,7 @@ export default function EmployeeTimesheet() {
       try {
         const [year, month] = filterMonth.split('-');
         // Получаем данные за выбранный месяц
-        const response = await fetch(`/api/timesheet/employee/monthly?month=${month}&year=${year}`);
+        const response = await fetch(`/api/v1/timesheet/employee/monthly?month=${month}&year=${year}`);
         
         if (!response.ok) {
           throw new Error('Ошибка при загрузке данных');
@@ -36,7 +36,7 @@ export default function EmployeeTimesheet() {
         setMonthlyData(data);
   
         // Загружаем список доступных месяцев для архива
-        const archiveResponse = await fetch('/api/timesheet/employee/archive-months');
+        const archiveResponse = await fetch('/api/v1/timesheet/employee/archive-months');
         if (!archiveResponse.ok) {
           throw new Error('Ошибка при загрузке архива');
         }

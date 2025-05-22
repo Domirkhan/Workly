@@ -24,7 +24,7 @@ export default function AdminTimesheet() {
       try {
         console.log('Fetching data for month:', filterMonth); // Добавляем лог
         const [year, month] = filterMonth.split('-');
-        const response = await fetch(`/api/timesheet/monthly?month=${month}&year=${year}`);
+        const response = await fetch(`/api/v1/timesheet/monthly?month=${month}&year=${year}`);
         
         if (!response.ok) {
           throw new Error('Ошибка при загрузке данных');
@@ -35,7 +35,7 @@ export default function AdminTimesheet() {
         setMonthlyData(data);
         
       // Загружаем архивные месяцы
-      const archiveResponse = await fetch('/api/timesheet/archive-months');
+      const archiveResponse = await fetch('/api/v1/timesheet/archive-months');
       if (archiveResponse.ok) {
         const archiveData = await archiveResponse.json();
         console.log('Archive months:', archiveData); // Добавляем лог
@@ -58,7 +58,7 @@ export default function AdminTimesheet() {
     const [year, month] = filterMonth.split('-');
     
     const response = await fetch(
-      `/api/timesheet/employee/${employeeId}/monthly?month=${month}&year=${year}`,
+      `/api/v1/timesheet/employee/${employeeId}/monthly?month=${month}&year=${year}`,
       {
         headers: {
           'Accept': 'application/json'

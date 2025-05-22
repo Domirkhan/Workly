@@ -1,74 +1,168 @@
 import { create } from 'zustand';
-import { authApi } from '../services/api';
+import { persist } from 'zustand/middleware';
 
-export const useAuthStore = create((set) => ({
-  user: JSON.parse(localStorage.getItem('user')) || null,
-  isLoading: false,
-  error: null,
+export const useAuthStore = create(
+  persist(
+    (set, get) => ({
+      user: null,
+      isLoading: false,
+      error: null,
 
-  login: async (credentials) => {
-    set({ isLoading: true, error: null });
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          email: credentials.email,
-          password: credentials.password
-        })
-      });
-      
-      const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.message || 'Ошибка авторизации');
+      // Метод для проверки авторизации
+      checkAuth: async () => {
+        try {
+          set({ isLoading: true, error: null });
+          const response = await fetch('/api/v1/auth/me', {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+          });
+
+          const data = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(data.message || 'Ошибка авторизации');
+          }
+
+          set({ user: data.user, isLoading: false });
+          return data.user;
+        } catch (error) {
+          console.error('Ошибка проверки авторизации:', error);
+          set({ user: null, isLoading: false });
+          return null;
+        }
+      },
+
+      // Метод для входа
+      login: async (credentials) => {
+        try {
+          set({ isLoading: true, error: null });
+          const response = await fetch('/api/v1/auth/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify(credentials)
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.message || 'Неверный email или пароль');
+          }
+
+          set({ user: data.user, isLoading: false });
+          return data.user;
+        } catch (error) {
+          console.error('Ошибка входа:', error);
+          set({ error: error.message, isLoading: false });
+          throw error;
+        }
+      },
+
+      // Метод для регистрации
+      register: async (userData) => {
+        try {
+          set({ isLoading: true, error: null });
+          const response = await fetch('/api/v1/auth/register', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify(userData)
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.message || 'Ошибка регистрации');
+          }
+
+          set({ user: data.user, isLoading: false });
+          return data.user;
+        } catch (error) {
+          console.error('Ошибка регистрации:', error);
+          set({ error: error.message, isLoading: false });
+          throw error;
+        }
+      },
+
+      // Метод для выхода
+      logout: async () => {
+        try {
+          const response = await fetch('/api/v1/auth/logout', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+          });
+
+          if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.message || 'Ошибка при выходе');
+          }
+
+          set({ user: null, error: null });
+          localStorage.removeItem('auth-storage');
+        } catch (error) {
+          console.error('Ошибка при выходе:', error);
+          set({ error: error.message });
+          throw error;
+        }
+      },
+
+      // Метод для обновления профиля
+      updateProfile: async (userData) => {
+        try {
+          set({ isLoading: true, error: null });
+          const response = await fetch('/api/v1/auth/profile', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify(userData)
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.message || 'Ошибка обновления профиля');
+          }
+
+          set(state => ({
+            user: { ...state.user, ...data.user },
+            isLoading: false
+          }));
+
+          return data.user;
+        } catch (error) {
+          console.error('Ошибка обновления профиля:', error);
+          set({ error: error.message, isLoading: false });
+          throw error;
+        }
+      },
+
+      // Вспомогательные методы
+      clearError: () => set({ error: null }),
+
+      resetAuth: () => {
+        set({ user: null, isLoading: false, error: null });
+        localStorage.removeItem('auth-storage');
       }
-      
-      // Сохраняем данные пользователя
-      localStorage.setItem('user', JSON.stringify(data.user));
-      set({ user: data.user, isLoading: false });
-      
-      return data;
-    } catch (error) {
-      set({ error: error.message, isLoading: false });
-      throw error;
+    }),
+    {
+      name: 'auth-storage',
+      partialize: (state) => ({
+        user: state.user
+      })
     }
-  },
+  )
+);
 
-  register: async (userData) => {
-    set({ isLoading: true, error: null });
-    try {
-      const data = await authApi.register(userData);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      set({ user: data.user, isLoading: false });
-      return data;
-    } catch (error) {
-      set({ error: error.message, isLoading: false });
-      throw error;
-    }
-  },
-
-  logout: async () => {
-    try {
-      await authApi.logout();
-      localStorage.removeItem('user');
-      set({ user: null });
-    } catch (error) {
-      console.error('Ошибка при выходе:', error);
-    }
-  },
-
-  checkAuth: async () => {
-    try {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        set({ user: JSON.parse(storedUser) });
-      }
-    } catch (error) {
-      console.error('Ошибка при проверке аутентификации:', error);
-    }
-  }
-}));
+export default useAuthStore;

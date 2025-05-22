@@ -12,7 +12,7 @@ export default function QRCodeGenerator() {
   const generateQRCode = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/company/qr-code', {
+      const response = await fetch('/api/v1/company/qr-code', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

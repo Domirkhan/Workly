@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Clock, Users, CreditCard, LineChart, Award, ArrowRight, CheckCircle } from 'lucide-react';
 import Logo from '../components/ui/Logo';
 import Button from '../components/ui/Button';
+
 export default function LandingPage() {
   const navigate = useNavigate();
   
@@ -41,7 +42,7 @@ export default function LandingPage() {
                 Удобный учет рабочего времени и расчет зарплаты
               </h1>
               <p className="text-lg md:text-xl text-blue-100 mb-8">
-                Отслеживайте часы работы сотрудников, автоматически рассчитывайте зарплату и оптимизируйте процесс начисления.
+                Отслеживайте часы работы сотрудников, автоматически рассчитывайте зарплату.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button 

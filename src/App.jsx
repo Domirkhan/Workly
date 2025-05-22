@@ -30,8 +30,16 @@ function App() {
   const { user, checkAuth } = useAuthStore();
 
 
-  useEffect(() => {
-    checkAuth();
+    useEffect(() => {
+    const initAuth = async () => {
+      try {
+        await checkAuth();
+      } catch (error) {
+        console.error('Ошибка инициализации:', error);
+      }
+    };
+
+    initAuth();
   }, []);
 
   return (
