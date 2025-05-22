@@ -26,45 +26,42 @@ export default function EmployeeDashboard() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!user?.id) return;
-  
-      try {
-        setIsLoading(true);
-        setError(null); // Сбрасываем ошибку перед новым запросом
-        
-        // Получаем записи
-        await fetchEmployeeRecords(user.id);
-        
-        // Получаем статистику
-        const response = await fetch('/api/v1/timesheet/employee/stats', {
-          headers: {
-            'Content-Type': 'application/json',
-            // Добавьте заголовки авторизации, если требуется
-          }
-        });
-  
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Ошибка при получении статистики');
-        }
-  
-        const statsData = await response.json();
-        console.log('Полученная статистика:', statsData); // Для отладки
-        
-        setStats({
-          totalHours: statsData.totalHours || 0,
-          totalEarnings: statsData.totalEarnings || 0,
-          hoursThisWeek: statsData.hoursThisWeek || 0,
-          attendanceRate: statsData.attendanceRate || 0
-        });
-      } catch (err) {
-        console.error('Ошибка загрузки данных:', err);
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+const fetchData = async () => {
+  if (!user?.id) return;
+
+  try {
+    setIsLoading(true);
+    setError(null);
+    
+    // Получаем записи
+    await fetchEmployeeRecords(user.id);
+    
+    // Получаем статистику
+    const response = await fetch('https://workly-backend.onrender.com/api/v1/timesheet/employee/stats', {
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      throw new Error('Ошибка при получении статистики');
+    }
+
+    const statsData = await response.json();
+    setStats({
+      totalHours: statsData.totalHours || 0,
+      totalEarnings: statsData.totalEarnings || 0,
+      hoursThisWeek: statsData.hoursThisWeek || 0,
+      attendanceRate: statsData.attendanceRate || 0
+    });
+  } catch (err) {
+    console.error('Ошибка загрузки данных:', err);
+    setError(err.message);
+  } finally {
+    setIsLoading(false);
+  }
+};
   
     fetchData();
   }, [user, fetchEmployeeRecords]);

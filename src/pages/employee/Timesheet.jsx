@@ -20,38 +20,50 @@ export default function EmployeeTimesheet() {
   const [archiveMonths, setArchiveMonths] = useState([]);
 
   useEffect(() => {
-    const fetchMonthlyData = async () => {
-      setIsLoading(true);
-      try {
-        const [year, month] = filterMonth.split('-');
-        // Получаем данные за выбранный месяц
-        const response = await fetch(`/api/v1/timesheet/employee/monthly?month=${month}&year=${year}`);
-        
-        if (!response.ok) {
-          throw new Error('Ошибка при загрузке данных');
-        }
-        
-        const data = await response.json();
-        console.log('Получены данные за месяц:', data); // Добавляем лог
-        setMonthlyData(data);
-  
-        // Загружаем список доступных месяцев для архива
-        const archiveResponse = await fetch('/api/v1/timesheet/employee/archive-months');
-        if (!archiveResponse.ok) {
-          throw new Error('Ошибка при загрузке архива');
-        }
-        
-        const archiveData = await archiveResponse.json();
-        console.log('Получены архивные месяцы:', archiveData); // Добавляем лог
-        setArchiveMonths(archiveData);
-        
-      } catch (err) {
-        console.error('Ошибка загрузки:', err);
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
+   const fetchMonthlyData = async () => {
+  setIsLoading(true);
+  try {
+    const [year, month] = filterMonth.split('-');
+    // Получаем данные за выбранный месяц
+    const response = await fetch(
+      `https://workly-backend.onrender.com/api/v1/timesheet/employee/monthly?month=${month}&year=${year}`,
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
       }
-    };
+    );
+    
+    if (!response.ok) {
+      throw new Error('Ошибка при загрузке данных');
+    }
+    
+    const data = await response.json();
+    setMonthlyData(data);
+    
+    // Загружаем архивные месяцы
+    const archiveResponse = await fetch(
+      'https://workly-backend.onrender.com/api/v1/timesheet/employee/archive-months',
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      }
+    );
+    
+    if (archiveResponse.ok) {
+      const archiveData = await archiveResponse.json();
+      setArchiveMonths(archiveData);
+    }
+  } catch (err) {
+    console.error('Ошибка загрузки:', err);
+    setError(err.message);
+  } finally {
+    setIsLoading(false);
+  }
+};
   
     fetchMonthlyData();
   }, [filterMonth]);

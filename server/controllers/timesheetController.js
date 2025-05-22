@@ -446,43 +446,28 @@ export const getEmployeeStats = async (req, res) => {
       status: 'completed'
     }).lean();
 
-    // Получаем данные о сотруднике
-    const employee = await User.findById(employeeId)
-      .select('hourlyRate')
-      .lean();
-
-    if (!employee) {
-      return res.status(404).json({ message: 'Сотрудник не найден' });
-    }
-
     // Расчет общего количества часов и заработка
-    const totalHours = allRecords.reduce((sum, record) => {
-      return sum + (record.totalHours || 0);
-    }, 0);
-
-    const totalEarnings = allRecords.reduce((sum, record) => {
-      return sum + (record.calculatedPay || 0);
-    }, 0);
+    const totalHours = allRecords.reduce((sum, record) => 
+      sum + (record.totalHours || 0), 0);
+    
+    const totalEarnings = allRecords.reduce((sum, record) => 
+      sum + (record.calculatedPay || 0), 0);
 
     // Расчет часов за текущую неделю
     const startOfWeek = new Date();
     startOfWeek.setHours(0, 0, 0, 0);
-    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay()); // Начало недели (воскресенье)
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
 
-    const weeklyRecords = allRecords.filter(record => 
-      new Date(record.date) >= startOfWeek
-    );
+    const hoursThisWeek = allRecords
+      .filter(record => new Date(record.date) >= startOfWeek)
+      .reduce((sum, record) => sum + (record.totalHours || 0), 0);
 
-    const hoursThisWeek = weeklyRecords.reduce((sum, record) => 
-      sum + (record.totalHours || 0), 0
-    );
-
-    // Расчет посещаемости (своевременные приходы)
+    // Расчет посещаемости
     const totalWorkDays = allRecords.length;
     const onTimeArrivals = allRecords.filter(record => {
       const clockIn = new Date(record.clockIn);
       const workStart = new Date(record.date);
-      workStart.setHours(9, 0, 0, 0); // Предполагаемое начало рабочего дня в 9:00
+      workStart.setHours(9, 0, 0, 0);
       return clockIn <= workStart;
     }).length;
 
@@ -490,19 +475,15 @@ export const getEmployeeStats = async (req, res) => {
       ? Math.round((onTimeArrivals / totalWorkDays) * 100)
       : 100;
 
-    // Отправляем результат
     res.json({
-      totalHours: totalHours || 0,
-      totalEarnings: totalEarnings || 0,
-      hoursThisWeek: hoursThisWeek || 0,
-      attendanceRate: attendanceRate || 0
+      totalHours,
+      totalEarnings,
+      hoursThisWeek,
+      attendanceRate
     });
 
   } catch (error) {
     console.error('Ошибка при получении статистики:', error);
-    res.status(500).json({ 
-      message: 'Ошибка при получении статистики',
-      error: error.message 
-    });
+    res.status(500).json({ message: error.message });
   }
 };
