@@ -116,7 +116,11 @@ export const login = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        position: user.position, // Добавляем должность
+        hourlyRate: user.hourlyRate, // Добавляем ставку
+        status: user.status, // Добавляем статус
+        joinDate: user.joinDate // Добавляем дату начала работы
       }
     });
   } catch (error) {
@@ -124,7 +128,6 @@ export const login = async (req, res) => {
     res.status(500).json({ message: 'Ошибка сервера' });
   }
 };
-
 // Выход
 export const logout = (req, res) => {
   res.cookie('token', '', {
@@ -134,10 +137,29 @@ export const logout = (req, res) => {
   res.json({ message: 'Выход выполнен успешно' });
 };
 
+// Также обновим getMe
 export const getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
-    res.status(200).json({ user });
+    const user = await User.findById(req.user.id)
+      .select('-password')
+      .lean();
+
+    if (!user) {
+      return res.status(404).json({ message: 'Пользователь не найден' });
+    }
+
+    res.status(200).json({ 
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        position: user.position,
+        hourlyRate: user.hourlyRate,
+        status: user.status,
+        joinDate: user.joinDate
+      } 
+    });
   } catch (error) {
     res.status(500).json({ message: 'Ошибка при получении пользователя' });
   }

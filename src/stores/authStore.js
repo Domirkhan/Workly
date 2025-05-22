@@ -25,7 +25,15 @@ checkAuth: async () => {
     }
 
     const data = await response.json();
-    set({ user: data.user, isLoading: false });
+    set({ 
+      user: {
+        ...data.user,
+        hourlyRate: data.user.hourlyRate || 0,
+        position: data.user.position || 'Не указана',
+        status: data.user.status || 'inactive'
+      }, 
+      isLoading: false 
+    });
     return data.user;
   } catch (error) {
     console.error('Ошибка проверки авторизации:', error);

@@ -5,7 +5,6 @@ import { useAuthStore } from '../../stores/authStore';
 import { Link } from 'react-router-dom';
 import { formatTime } from '../../utils/formatTime';
 
-
 export default function Profile() {
   const { user } = useAuthStore();
 
@@ -59,46 +58,48 @@ export default function Profile() {
                 {user.position || 'Не указана'}
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700">
-                  Ставка (тг/час)
-                </label>
-                <p className="mt-1 text-lg text-slate-900">
-                  {user.hourlyRate ? `${user.hourlyRate.toFixed(2)}тг` : '—'}
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700">
-                  Статус
-                </label>
-                <p className="mt-1 text-lg text-slate-900">
+            <div>
+              <label className="block text-sm font-medium text-slate-700">
+                Ставка (тг/час)
+              </label>
+              <p className="mt-1 text-lg text-slate-900">
+                {user.hourlyRate ? `${user.hourlyRate.toFixed(2)} тг` : '—'}
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700">
+                Статус
+              </label>
+              <p className="mt-1">
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium ${
+                  user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}>
                   {user.status === 'active' ? 'Активен' : 'Неактивен'}
-                </p>
-              </div>
+                </span>
+              </p>
             </div>
-            {/* Передаем ID пользователя в компонент BonusHistory */}
-            <div className="mt-6">
-              <Link 
-                to="/bonus-history"
-                className="text-blue-600 hover:text-blue-700 flex items-center justify-center"
+          </div>
+          {/* Передаем ID пользователя в компонент BonusHistory */}
+          <div className="mt-6">
+            <Link 
+              to="/bonus-history"
+              className="text-blue-600 hover:text-blue-700 flex items-center justify-center"
+            >
+              <span>Посмотреть полную историю премий и штрафов</span>
+              <svg 
+                className="w-4 h-4 ml-2" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
               >
-                <span>Посмотреть полную историю премий и штрафов</span>
-                <svg 
-                  className="w-4 h-4 ml-2" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth={2} 
-                    d="M9 5l7 7-7 7" 
-                  />
-                </svg>
-              </Link>
-            </div>
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M9 5l7 7-7 7" 
+                />
+              </svg>
+            </Link>
           </div>
         </CardContent>
       </Card>
