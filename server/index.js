@@ -39,16 +39,20 @@ app.use('/api/v1/employees', employeeRoutes);
 app.use('/api/v1/timesheet', timesheetRoutes);
 app.use('/api/v1/company', companyRoutes);
 app.use('/api/v1/bonuses', bonusRoutes);
-// Раздача статических файлов только в production
+
+// Раздача статических файлов и SPA роутинг
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '..', 'dist')));
   
-  app.get('*', (req, res) => {
+  // Все остальные запросы перенаправляем на index.html
+  app.get('/*', (req, res) => {
+    // Проверяем, не является ли запрос API запросом
     if (!req.path.startsWith('/api')) {
       res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
     }
   });
 }
+
 // SPA route
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));

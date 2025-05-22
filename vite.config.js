@@ -2,15 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  plugins: [
-    react({
-      jsxRuntime: 'automatic',
-      jsxImportSource: 'react'
-    })
-  ],
-  define: {
-    'process.env.NODE_ENV': '"production"'
-  },
+  plugins: [react()],
   build: {
     chunkSizeWarningLimit: 1600,
     rollupOptions: {
@@ -39,8 +31,5 @@ export default defineConfig({
         secure: false
       }
     }
-  },
-  optimizeDeps: {
-    include: ['react', 'react-dom']
   }
 });
