@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import colors from 'colors';
+import colors from 'colors/safe';  // Используем безопасный импорт
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,9 +22,9 @@ const connectDB = async () => {
       useUnifiedTopology: true,
     });
 
-    console.log(`MongoDB подключена: ${conn.connection.host}`.green);
+    console.log(colors.green(`MongoDB подключена: ${conn.connection.host}`));
   } catch (error) {
-    console.error(`Ошибка подключения к MongoDB: ${error}`.red);
+    console.error(colors.red(`Ошибка подключения к MongoDB: ${error}`));
     process.exit(1);
   }
 };
