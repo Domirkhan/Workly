@@ -4,7 +4,6 @@ import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import path from 'path';
-// Уберем morgan, так как он вызывает ошибку
 import authRoutes from './routes/authRoutes.js';
 import employeeRoutes from './routes/employeeRoutes.js';
 import timesheetRoutes from './routes/timesheetRoutes.js';
@@ -30,9 +29,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
 }));
 
-// Статические файлы
-app.use(express.static(path.join(__dirname, '..', 'dist')));
-
 // API routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/employees', employeeRoutes);
@@ -40,23 +36,18 @@ app.use('/api/v1/timesheet', timesheetRoutes);
 app.use('/api/v1/company', companyRoutes);
 app.use('/api/v1/bonuses', bonusRoutes);
 
-// Раздача статических файлов и SPA роутинг
+// Статические файлы и SPA роутинг
 if (process.env.NODE_ENV === 'production') {
+  // Раздача статических файлов
   app.use(express.static(path.join(__dirname, '..', 'dist')));
   
   // Все остальные запросы перенаправляем на index.html
-  app.get('/*', (req, res) => {
-    // Проверяем, не является ли запрос API запросом
+  app.get('*', (req, res) => {
     if (!req.path.startsWith('/api')) {
       res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
     }
   });
 }
-
-// SPA route
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
-});
 
 const PORT = process.env.PORT || 5000;
 

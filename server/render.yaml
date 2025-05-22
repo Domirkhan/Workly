@@ -9,5 +9,13 @@ services:
         value: production
       - key: PORT
         value: 5000
+      - key: MONGODB_URI
+        value: mongodb+srv://inzuakylbekova:8520@cluster0.zm4mb6o.mongodb.net/TimeTrack
+      - key: JWT_SECRET
+        value: sevret8520
       - key: CLIENT_URL
         value: https://workly-zd8z.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
