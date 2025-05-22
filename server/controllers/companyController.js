@@ -16,15 +16,11 @@ export const generateQRCode = async (req, res) => {
       return res.status(400).json({ message: 'Компания не найдена' });
     }
 
-    // Генерируем уникальный код
-    const code = crypto.randomBytes(32).toString('hex');
-    
-    // Обновляем QR-код и время его истечения
-    company.qrCode = code;
-    company.qrCodeExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 часа
+    // Генерируем новый QR-код
+    company.generateNewQRCode();
     await company.save();
 
-    res.json({ code: code });
+    res.json({ code: company.qrCode });
   } catch (error) {
     console.error('Error generating QR code:', error);
     res.status(500).json({ message: 'Ошибка при генерации QR-кода' });

@@ -4,7 +4,8 @@ import { generateQRCode } from '../controllers/companyController.js';
 
 const router = express.Router();
 
-// Защищаем маршрут middleware аутентификации
-router.post('/qr-code', auth, generateQRCode);
+router.use(auth);
+
+router.post('/qr-code', generateQRCode);
 
 export default router;

@@ -1,38 +1,42 @@
 import { useState } from 'react';
 import { QrCode } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react'; // Изменяем импорт
+import { QRCodeSVG } from 'qrcode.react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import AdminLayout from '../../components/layout/AdminLayout';
 
 export default function QRCodeGenerator() {
-  const [qrData, setQrData] = useState(null); // Добавляем состояние qrData
-  const [error, setError] = useState(null); // Добавляем состояние error
+  const [qrData, setQrData] = useState(null);
+  const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+
   const generateQRCode = async () => {
     setIsLoading(true);
+    setError(null);
+    
     try {
-      const response = await fetch('/api/v1/company/qr-code', {
+      const response = await fetch('https://workly-backend.onrender.com/api/v1/company/qr-code', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         credentials: 'include'
       });
-      
+
       if (!response.ok) {
         throw new Error('Ошибка при генерации QR-кода');
       }
-      
+
       const data = await response.json();
-      if (data.code) {
-        setQrData(data.code);
-      } else {
+      
+      if (!data.code) {
         throw new Error('Некорректный ответ от сервера');
       }
+
+      setQrData(data.code);
     } catch (err) {
+      console.error('Ошибка:', err);
       setError(err.message || 'Ошибка при генерации QR-кода');
-      console.error(err);
     } finally {
       setIsLoading(false);
     }
@@ -50,7 +54,7 @@ export default function QRCodeGenerator() {
           <div className="flex flex-col items-center space-y-6">
             {qrData ? (
               <div className="p-4 bg-white rounded-lg shadow-lg">
-                <QRCodeSVG value={qrData} size={256} /> {/* Используем QRCodeSVG */}
+                <QRCodeSVG value={qrData} size={256} />
               </div>
             ) : null}
             
@@ -58,6 +62,7 @@ export default function QRCodeGenerator() {
               onClick={generateQRCode}
               isLoading={isLoading}
               leftIcon={<QrCode size={20} />}
+              disabled={isLoading}
             >
               {qrData ? 'Сгенерировать новый код' : 'Сгенерировать QR-код'}
             </Button>
