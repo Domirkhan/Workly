@@ -1,4 +1,6 @@
-const BASE_URL = 'https://workly-backend.onrender.com/api/v1';
+const BASE_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://workly-backend.onrender.com/api/v1'
+  : '/api/v1';
 
 async function fetchWithAuth(endpoint, options = {}) {
   try {
@@ -7,7 +9,6 @@ async function fetchWithAuth(endpoint, options = {}) {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Access-Control-Allow-Credentials': 'true',
         ...options.headers,
       },
       credentials: 'include',
