@@ -23,13 +23,29 @@ export default defineConfig({
       }
     }
   },
-  server: {
-    proxy: {
-      '/api': {
-        target: process.env.VITE_API_URL || 'http://localhost:5000',
-        changeOrigin: true,
-        secure: false
+server: {
+  proxy: {
+    '/api': {
+      target: process.env.VITE_API_URL || 'http://localhost:5000',
+      changeOrigin: true,
+      secure: false,
+      cookieDomainRewrite: {
+        '*': ''
+      },
+      configure: (proxy) => {
+        proxy.on('proxyRes', (proxyRes) => {
+          const cookies = proxyRes.headers['set-cookie'];
+          if (cookies) {
+            proxyRes.headers['set-cookie'] = cookies.map(cookie =>
+              cookie
+                .replace(/Domain=[^;]+;/, '')
+                .replace(/SameSite=\w+/, 'SameSite=None')
+                .replace(/Secure/, 'Secure')
+            );
+          }
+        });
       }
     }
   }
+}
 });

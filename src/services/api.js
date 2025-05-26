@@ -2,16 +2,23 @@ const BASE_URL = 'https://workly-backend.onrender.com/api/v1';
 
 async function fetchWithAuth(endpoint, options = {}) {
   try {
-const response = await fetch(`${BASE_URL}${endpoint}`, {
-  ...options,
-  headers: {
-    'Content-Type': 'application/json',
-    ...options.headers,
-  },
-  credentials: 'include'
-});
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        ...options.headers,
+      },
+      credentials: 'include',
+      mode: 'cors'
+    });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        // Перенаправляем на логин при ошибке авторизации
+        window.location.href = '/login';
+        throw new Error('Требуется авторизация');
+      }
       const error = await response.json().catch(() => ({
         message: 'Ошибка сервера'
       }));

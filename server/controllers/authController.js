@@ -61,9 +61,11 @@ export const register = async (req, res) => {
 
 res.cookie('token', token, {
   httpOnly: true,
-  secure: true, // обязательно для https
-  sameSite: 'None', // обязательно для кросс-доменных запросов на iOS/Safari
-  maxAge: 30 * 24 * 60 * 60 * 1000
+  secure: true,
+  sameSite: 'none',
+  maxAge: 30 * 24 * 60 * 60 * 1000,
+  path: '/',
+  domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
 });
 
     res.status(201).json({
