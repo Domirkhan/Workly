@@ -59,12 +59,12 @@ export const register = async (req, res) => {
     // Создание токена
     const token = generateToken(user._id);
 
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 дней
-    });
+res.cookie('token', token, {
+  httpOnly: true,
+  secure: true, // обязательно для https
+  sameSite: 'None', // обязательно для кросс-доменных запросов на iOS/Safari
+  maxAge: 30 * 24 * 60 * 60 * 1000
+});
 
     res.status(201).json({
       id: user._id,
