@@ -59,13 +59,14 @@ export const register = async (req, res) => {
     // Создание токена
     const token = generateToken(user._id);
 
+// В методе login и register обновите настройки cookie
 res.cookie('token', token, {
   httpOnly: true,
   secure: true,
   sameSite: 'none',
-  maxAge: 30 * 24 * 60 * 60 * 1000,
   path: '/',
-  domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
+  domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : 'localhost',
+  maxAge: 30 * 24 * 60 * 60 * 1000
 });
 
     res.status(201).json({

@@ -7,6 +7,7 @@ async function fetchWithAuth(endpoint, options = {}) {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'Access-Control-Allow-Credentials': 'true',
         ...options.headers,
       },
       credentials: 'include',

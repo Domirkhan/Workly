@@ -23,15 +23,21 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
-  origin: ['https://workly-zd8z.onrender.com', 'http://localhost:5173'],
+  origin: [
+    'https://workly-zd8z.onrender.com',
+    'http://localhost:5173',
+    'https://workly-backend.onrender.com'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'Accept'],
   exposedHeaders: ['Set-Cookie'],
-  sameSite: 'none',
-  secure: true
+  preflightContinue: true,
+  optionsSuccessStatus: 200
 }));
 
+// Добавьте промежуточное ПО для OPTIONS запросов
+app.options('*', cors());
 // Добавим настройки cookie-parser
 app.use(cookieParser(process.env.JWT_SECRET)); // Используем JWT_SECRET как секрет
 // Важно: сначала подключаем API маршруты
