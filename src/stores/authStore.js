@@ -1,108 +1,111 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+
 export const useAuthStore = create(
   persist(
-    (set, get) => ({
+    (set) => ({
       user: null,
       isLoading: false,
       error: null,
 
-
-checkAuth: async () => {
-  try {
-    set({ isLoading: true, error: null });
-    const response = await fetch('https://workly-backend.onrender.com/api/v1/auth/me', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      credentials: 'include'
-    });
-
-    if (!response.ok) {
-      throw new Error('Ошибка авторизации');
-    }
-
-    const data = await response.json();
-    set({ 
-      user: {
-        ...data.user,
-        hourlyRate: data.user.hourlyRate || 0,
-        position: data.user.position || 'Не указана',
-        status: data.user.status || 'inactive'
-      }, 
-      isLoading: false 
-    });
-    return data.user;
-  } catch (error) {
-    console.error('Ошибка проверки авторизации:', error);
-    set({ user: null, isLoading: false });
-    return null;
-  }
-},
-
-login: async (credentials) => {
-  try {
-    set({ isLoading: true, error: null });
-    const response = await fetch('https://workly-backend.onrender.com/api/v1/auth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      credentials: 'include',
-      body: JSON.stringify(credentials)
-    });
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Неверный email или пароль');
-    }
-
-    set({ user: data.user, isLoading: false });
-    return data.user;
-  } catch (error) {
-    console.error('Ошибка входа:', error);
-    set({ error: error.message, isLoading: false });
-    throw error;
-  }
-},
-
-      // Метод для регистрации
-      register: async (userData) => {
-  try {
-    set({ isLoading: true, error: null });
-    const response = await fetch(`${apiConfig.baseURL}/auth/register`, {
-      method: 'POST',
-      headers: apiConfig.headers,
-      credentials: apiConfig.credentials,
-      body: JSON.stringify(userData)
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Ошибка при регистрации');
-    }
-
-    const data = await response.json();
-    set({ user: data.user, isLoading: false });
-    return data.user;
-  } catch (error) {
-    console.error('Ошибка регистрации:', error);
-    set({ error: error.message, isLoading: false });
-    throw error;
-  }
-},
-
-      // Метод для выхода
-      logout: async () => {
+      checkAuth: async () => {
         try {
-          const response = await fetch('/api/v1/auth/logout', {
+          set({ isLoading: true, error: null });
+          const response = await fetch(`${API_URL}/auth/me`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+          });
+
+          if (!response.ok) {
+            if (response.status === 401) {
+              set({ user: null, isLoading: false });
+              return null;
+            }
+            throw new Error('Ошибка авторизации');
+          }
+
+          const data = await response.json();
+          set({ 
+            user: {
+              ...data.user,
+              hourlyRate: data.user.hourlyRate || 0,
+              position: data.user.position || 'Не указана',
+              status: data.user.status || 'inactive'
+            }, 
+            isLoading: false 
+          });
+          return data.user;
+        } catch (error) {
+          console.error('Ошибка проверки авторизации:', error);
+          set({ user: null, isLoading: false, error: error.message });
+          return null;
+        }
+      },
+
+      login: async (credentials) => {
+        try {
+          set({ isLoading: true, error: null });
+          const response = await fetch(`${API_URL}/auth/login`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
             },
+            credentials: 'include',
+            body: JSON.stringify(credentials)
+          });
+
+          const data = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(data.message || 'Неверный email или пароль');
+          }
+
+          set({ user: data.user, isLoading: false });
+          return data.user;
+        } catch (error) {
+          console.error('Ошибка входа:', error);
+          set({ error: error.message, isLoading: false });
+          throw error;
+        }
+      },
+
+      register: async (userData) => {
+        try {
+          set({ isLoading: true, error: null });
+          const response = await fetch(`${API_URL}/auth/register`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify(userData)
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.message || 'Ошибка при регистрации');
+          }
+
+          set({ user: data.user, isLoading: false });
+          return data.user;
+        } catch (error) {
+          console.error('Ошибка регистрации:', error);
+          set({ error: error.message, isLoading: false });
+          throw error;
+        }
+      },
+
+      logout: async () => {
+        try {
+          set({ isLoading: true, error: null });
+          const response = await fetch(`${API_URL}/auth/logout`, {
+            method: 'POST',
             credentials: 'include'
           });
 
@@ -115,16 +118,17 @@ login: async (credentials) => {
           localStorage.removeItem('auth-storage');
         } catch (error) {
           console.error('Ошибка при выходе:', error);
-          set({ error: error.message });
+          set({ error: error.message, isLoading: false });
           throw error;
+        } finally {
+          set({ isLoading: false });
         }
       },
 
-      // Метод для обновления профиля
       updateProfile: async (userData) => {
         try {
           set({ isLoading: true, error: null });
-          const response = await fetch('/api/v1/auth/profile', {
+          const response = await fetch(`${API_URL}/auth/profile`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json'
@@ -152,7 +156,6 @@ login: async (credentials) => {
         }
       },
 
-      // Вспомогательные методы
       clearError: () => set({ error: null }),
 
       resetAuth: () => {
