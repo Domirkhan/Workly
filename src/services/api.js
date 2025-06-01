@@ -1,6 +1,6 @@
-const BASE_URL = process.env.NODE_ENV === 'production' 
+const BASE_URL = process.env.NODE_ENV === 'production'
   ? 'https://workly-backend.onrender.com/api/v1'
-  : '/api/v1';
+  : 'http://localhost:5000/api/v1';
 
 async function fetchWithAuth(endpoint, options = {}) {
   try {
@@ -15,9 +15,9 @@ async function fetchWithAuth(endpoint, options = {}) {
       mode: 'cors'
     });
 
+    // Проверка на ошибки
     if (!response.ok) {
       if (response.status === 401) {
-        // Перенаправляем на логин при ошибке авторизации
         window.location.href = '/login';
         throw new Error('Требуется авторизация');
       }
@@ -27,13 +27,14 @@ async function fetchWithAuth(endpoint, options = {}) {
       throw new Error(error.message || 'Произошла ошибка');
     }
 
-    return response.json();
+    // Проверка на пустой ответ
+    const text = await response.text();
+    return text ? JSON.parse(text) : {};
   } catch (error) {
     console.error('API Error:', error);
     throw error;
   }
 }
-
 // Аутентификация
 export const authApi = {
   register: (userData) => 
