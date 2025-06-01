@@ -1,6 +1,6 @@
 const BASE_URL = process.env.NODE_ENV === 'production'
   ? 'https://workly-backend.onrender.com/api/v1'
-  : 'http://localhost:5000/api/v1';
+  : '/api/v1';
 
 async function fetchWithAuth(endpoint, options = {}) {
   try {
