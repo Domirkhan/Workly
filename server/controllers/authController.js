@@ -13,16 +13,33 @@ const generateToken = (userId) => {
 // Регистрация
 export const register = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, companyName } = req.body;
     
+    // Валидация входных данных
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({ 
+        message: 'Пожалуйста, заполните все обязательные поля' 
+      });
+    }
+
+    // Проверяем корректность email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ 
+        message: 'Пожалуйста, введите корректный email' 
+      });
+    }
+
     // Проверяем существование пользователя
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: 'Пользователь с таким email уже существует' });
+      return res.status(400).json({ 
+        message: 'Пользователь с таким email уже существует' 
+      });
     }
     
     // Хешируем пароль
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 12);
     
     let user;
     let company;
@@ -30,18 +47,26 @@ export const register = async (req, res) => {
     if (role === 'admin') {
       // Создаём компанию для админа
       company = new Company({
-        name: `Company of ${name}`,
+        name: companyName || `Компания ${name}`,
+        owner: null // Временно null, обновим после создания пользователя
       });
       
+      await company.save();
+
       // Создание админа
       user = new User({
         name,
         email,
         password: hashedPassword,
         role,
-        companyId: company._id
+        companyId: company._id,
+        status: 'active',
+        joinDate: new Date()
       });
 
+      await user.save();
+
+      // Обновляем владельца компании
       company.owner = user._id;
       await company.save();
     } else {
@@ -50,31 +75,45 @@ export const register = async (req, res) => {
         name,
         email,
         password: hashedPassword,
-        role
+        role,
+        status: 'pending',
+        joinDate: new Date()
       });
+
+      await user.save();
     }
 
-    await user.save();
-
-    // Создание токена
+    // Генерация JWT токена
     const token = generateToken(user._id);
 
-res.cookie('token', token, {
-  httpOnly: true,
-  secure: true,
-  sameSite: 'none',
-  path: '/',
-  domain: process.env.NODE_ENV === 'production' ? 'onrender.com' : undefined,
-  maxAge: 30 * 24 * 60 * 60 * 1000
-});
+    // Настройка cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      path: '/',
+      domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined,
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 дней
+    });
+
+    // Отправляем ответ
     res.status(201).json({
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        companyId: user.companyId,
+        joinDate: user.joinDate
+      }
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Ошибка регистрации:', error);
+    res.status(500).json({ 
+      message: 'Произошла ошибка при регистрации',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 

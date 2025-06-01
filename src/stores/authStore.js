@@ -71,31 +71,29 @@ login: async (credentials) => {
 
       // Метод для регистрации
       register: async (userData) => {
-        try {
-          set({ isLoading: true, error: null });
-          const response = await fetch('/api/v1/auth/register', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            credentials: 'include',
-            body: JSON.stringify(userData)
-          });
+  try {
+    set({ isLoading: true, error: null });
+    const response = await fetch(`${apiConfig.baseURL}/auth/register`, {
+      method: 'POST',
+      headers: apiConfig.headers,
+      credentials: apiConfig.credentials,
+      body: JSON.stringify(userData)
+    });
 
-          const data = await response.json();
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Ошибка при регистрации');
+    }
 
-          if (!response.ok) {
-            throw new Error(data.message || 'Ошибка регистрации');
-          }
-
-          set({ user: data.user, isLoading: false });
-          return data.user;
-        } catch (error) {
-          console.error('Ошибка регистрации:', error);
-          set({ error: error.message, isLoading: false });
-          throw error;
-        }
-      },
+    const data = await response.json();
+    set({ user: data.user, isLoading: false });
+    return data.user;
+  } catch (error) {
+    console.error('Ошибка регистрации:', error);
+    set({ error: error.message, isLoading: false });
+    throw error;
+  }
+},
 
       // Метод для выхода
       logout: async () => {
