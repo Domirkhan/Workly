@@ -15,19 +15,11 @@ async function fetchWithAuth(endpoint, options = {}) {
       mode: 'cors'
     });
 
-    // Проверка на ошибки
     if (!response.ok) {
-      if (response.status === 401) {
-        window.location.href = '/login';
-        throw new Error('Требуется авторизация');
-      }
-      const error = await response.json().catch(() => ({
-        message: 'Ошибка сервера'
-      }));
+      const error = await response.json();
       throw new Error(error.message || 'Произошла ошибка');
     }
 
-    // Проверка на пустой ответ
     const text = await response.text();
     return text ? JSON.parse(text) : {};
   } catch (error) {

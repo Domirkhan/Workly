@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+const API_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
 export const useAuthStore = create(
   persist(
@@ -16,7 +16,8 @@ export const useAuthStore = create(
           const response = await fetch(`${API_URL}/auth/me`, {
             method: 'GET',
             headers: {
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
             },
             credentials: 'include'
           });
@@ -37,7 +38,8 @@ export const useAuthStore = create(
               position: data.user.position || 'Не указана',
               status: data.user.status || 'inactive'
             }, 
-            isLoading: false 
+            isLoading: false,
+            error: null
           });
           return data.user;
         } catch (error) {
@@ -53,19 +55,20 @@ export const useAuthStore = create(
           const response = await fetch(`${API_URL}/auth/login`, {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
             },
             credentials: 'include',
             body: JSON.stringify(credentials)
           });
 
-          const data = await response.json();
-          
           if (!response.ok) {
+            const data = await response.json();
             throw new Error(data.message || 'Неверный email или пароль');
           }
 
-          set({ user: data.user, isLoading: false });
+          const data = await response.json();
+          set({ user: data.user, isLoading: false, error: null });
           return data.user;
         } catch (error) {
           console.error('Ошибка входа:', error);
@@ -80,19 +83,20 @@ export const useAuthStore = create(
           const response = await fetch(`${API_URL}/auth/register`, {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
             },
             credentials: 'include',
             body: JSON.stringify(userData)
           });
 
-          const data = await response.json();
-
           if (!response.ok) {
+            const data = await response.json();
             throw new Error(data.message || 'Ошибка при регистрации');
           }
 
-          set({ user: data.user, isLoading: false });
+          const data = await response.json();
+          set({ user: data.user, isLoading: false, error: null });
           return data.user;
         } catch (error) {
           console.error('Ошибка регистрации:', error);
@@ -106,7 +110,11 @@ export const useAuthStore = create(
           set({ isLoading: true, error: null });
           const response = await fetch(`${API_URL}/auth/logout`, {
             method: 'POST',
-            credentials: 'include'
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            }
           });
 
           if (!response.ok) {
@@ -119,7 +127,6 @@ export const useAuthStore = create(
         } catch (error) {
           console.error('Ошибка при выходе:', error);
           set({ error: error.message, isLoading: false });
-          throw error;
         } finally {
           set({ isLoading: false });
         }
@@ -131,21 +138,23 @@ export const useAuthStore = create(
           const response = await fetch(`${API_URL}/auth/profile`, {
             method: 'PUT',
             headers: {
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
             },
             credentials: 'include',
             body: JSON.stringify(userData)
           });
 
-          const data = await response.json();
-
           if (!response.ok) {
+            const data = await response.json();
             throw new Error(data.message || 'Ошибка обновления профиля');
           }
 
+          const data = await response.json();
           set(state => ({
             user: { ...state.user, ...data.user },
-            isLoading: false
+            isLoading: false,
+            error: null
           }));
 
           return data.user;
