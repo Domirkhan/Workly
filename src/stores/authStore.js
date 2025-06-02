@@ -64,25 +64,25 @@ export const useAuthStore = create(
       },
 
       login: async (credentials) => {
-        try {
-          set({ isLoading: true, error: null });
-          const data = await fetchWithAuth('/auth/login', {
-            method: 'POST',
-            body: JSON.stringify(credentials)
-          });
+  try {
+    set({ isLoading: true, error: null });
+    const data = await fetchWithAuth('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials)
+    });
 
-          set({ 
-            user: data.user, 
-            isLoading: false, 
-            error: null 
-          });
-          return data.user;
-        } catch (error) {
-          console.error('Ошибка входа:', error);
-          set({ error: error.message, isLoading: false });
-          throw error;
-        }
-      },
+    set({ 
+      user: data.user, 
+      isLoading: false, 
+      error: null 
+    });
+    return data.user;
+  } catch (error) {
+    console.error('Ошибка входа:', error);
+    set({ error: error.message, isLoading: false });
+    throw error;
+  }
+},
 
       register: async (userData) => {
         try {
