@@ -76,7 +76,7 @@ export const register = async (req, res) => {
         email,
         password: hashedPassword,
         role,
-        status: 'pending',
+        status: 'active',
         joinDate: new Date()
       });
 
