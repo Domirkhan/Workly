@@ -4,8 +4,8 @@ import 'react-toastify/dist/ReactToastify.css';
 
 // Страницы для публичного доступа
 import LandingPage from './pages/LandingPage';
-import Login from './pages/auth/Login';
-import Register from './pages/auth/Register';
+import Login from './pages/Login';
+import Register from './pages/Register';
 
 // Страницы администратора
 import AdminDashboard from './pages/admin/Dashboard';
