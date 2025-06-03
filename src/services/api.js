@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { showToast } from '../utils/toast';
 import toast from 'react-hot-toast';
-import { TOAST_MESSAGES } from '../constants/toastMessages';
+import { TOAST_MESSAGES } from '../../server/constants/toastMessages';
 
 // Создаем инстанс axios с базовой конфигурацией
 const axiosClient = axios.create({

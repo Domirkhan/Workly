@@ -1,5 +1,5 @@
 import toast from 'react-hot-toast';
-import { TOAST_MESSAGES } from '../constants/toastMessages';
+import { TOAST_MESSAGES } from '../../server/constants/toastMessages';
 
 export const showToast = {
   success: (message) => toast.success(message, {

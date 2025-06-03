@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { showToast } from '../utils/toast';
 import { api } from '../services/api';
 import toast from 'react-hot-toast';
-import { TOAST_MESSAGES } from '../constants/toastMessages';
+import { TOAST_MESSAGES } from '../../server/constants/toastMessages';
 
 export const useTimesheetStore = create((set, get) => ({
   records: [],

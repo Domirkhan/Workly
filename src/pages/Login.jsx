@@ -7,7 +7,7 @@ import { Card, CardContent } from '../components/ui/Card';
 import { useAuthStore } from '../stores/authStore';
 import { api } from '../services/api';
 import toast from 'react-hot-toast';
-import { TOAST_MESSAGES } from '../constants/toastMessages';
+import { TOAST_MESSAGES } from '../../server/constants/toastMessages';
 
 export default function Login() {
   const navigate = useNavigate();
