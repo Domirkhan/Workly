@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Dialog } from '../../components/ui/Dialog';
 import Button from '../../components/ui/Button';
-import { toast } from 'react-toastify';
+import toast from 'react-hot-toast';
 
 export default function BonusModal({ isOpen, onClose, employee }) {
   const [formData, setFormData] = useState({
