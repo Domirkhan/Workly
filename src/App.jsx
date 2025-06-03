@@ -72,12 +72,12 @@ function App() {
             <EmployeeProfile />
           </ProtectedRoute>
         } />
-        <Route path="/admin/timesheet" element={
+        <Route path="/admin/timesheets" element={
           <ProtectedRoute role="admin">
             <AdminTimesheet />
           </ProtectedRoute>
         } />
-        <Route path="/admin/qr-code" element={
+         <Route path="/admin/qr-generator" element={
           <ProtectedRoute role="admin">
             <QRCodeGenerator />
           </ProtectedRoute>
