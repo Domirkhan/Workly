@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { showToast } from '../utils/toast';
+import toast from 'react-hot-toast';
 import { TOAST_MESSAGES } from '../constants/toastMessages';
 
 // Создаем инстанс axios с базовой конфигурацией
@@ -17,6 +18,12 @@ const axiosClient = axios.create({
 // Перехватчик запросов
 axiosClient.interceptors.request.use(
   (config) => {
+    // Добавляем загрузочное уведомление для POST, PUT, DELETE запросов
+    if (['post', 'put', 'delete'].includes(config.method)) {
+      toast.loading('Загрузка...', {
+        id: config.url
+      });
+    }
     return config;
   },
   (error) => {
@@ -27,10 +34,21 @@ axiosClient.interceptors.request.use(
 
 // Перехватчик ответов
 axiosClient.interceptors.response.use(
-  (response) => response.data,
+  (response) => {
+    // Закрываем загрузочное уведомление и показываем успех
+    if (['post', 'put', 'delete'].includes(response.config.method)) {
+      toast.dismiss(response.config.url);
+      toast.success('Операция выполнена успешно');
+    }
+    return response.data;
+  },
   (error) => {
+    // Закрываем загрузочное уведомление и показываем ошибку
+    if (error.config) {
+      toast.dismiss(error.config.url);
+    }
     const message = error.response?.data?.message || TOAST_MESSAGES.ERROR.DEFAULT;
-    showToast.error(message);
+    toast.error(message);
     return Promise.reject(error);
   }
 );

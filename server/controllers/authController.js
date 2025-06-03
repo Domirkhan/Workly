@@ -2,6 +2,7 @@ import User from '../models/userModel.js';
 import Company from '../models/companyModel.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import { TOAST_MESSAGES } from '../constants/toastMessages.js';
 
 // Генерация JWT токена
 const generateToken = (userId) => {
@@ -15,14 +16,14 @@ export const register = async (req, res) => {
   try {
     const { name, email, password, role, companyName } = req.body;
     
-    // Валидация входных данных
+    // Валидация
     if (!name || !email || !password || !role) {
       return res.status(400).json({ 
         message: 'Пожалуйста, заполните все обязательные поля' 
       });
     }
 
-    // Проверяем корректность email
+    // Проверка email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({ 
@@ -30,73 +31,64 @@ export const register = async (req, res) => {
       });
     }
 
-    // Проверяем существование пользователя
+    // Проверка существующего пользователя
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ 
         message: 'Пользователь с таким email уже существует' 
       });
     }
-    
-    // Хешируем пароль
-    const hashedPassword = await bcrypt.hash(password, 12);
-    
+
     let user;
     let company;
-    
+
     if (role === 'admin') {
-      // Создаём компанию для админа
+      // Создаем компанию
       company = new Company({
         name: companyName || `Компания ${name}`,
-        owner: null // Временно null, обновим после создания пользователя
+        owner: null
       });
-      
       await company.save();
 
-      // Создание админа
+      // Создаем админа
       user = new User({
         name,
         email,
-        password: hashedPassword,
+        password,
         role,
         companyId: company._id,
         status: 'active',
         joinDate: new Date()
       });
-
       await user.save();
 
       // Обновляем владельца компании
       company.owner = user._id;
       await company.save();
     } else {
-      // Создаём обычного пользователя без привязки к компании
+      // Создаем обычного пользователя
       user = new User({
         name,
         email,
-        password: hashedPassword,
+        password,
         role,
         status: 'active',
         joinDate: new Date()
       });
-
       await user.save();
     }
 
-    // Генерация JWT токена
+    // Генерируем токен
     const token = generateToken(user._id);
 
-    // Настройка cookie
+    // Настраиваем cookie
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      path: '/',
-      domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined,
-      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 дней
+      maxAge: 30 * 24 * 60 * 60 * 1000
     });
 
-    // Отправляем ответ
     res.status(201).json({
       user: {
         id: user._id,
@@ -105,18 +97,20 @@ export const register = async (req, res) => {
         role: user.role,
         status: user.status,
         companyId: user.companyId,
+        position: user.position,
+        hourlyRate: user.hourlyRate,
         joinDate: user.joinDate
       }
     });
   } catch (error) {
     console.error('Ошибка регистрации:', error);
     res.status(500).json({ 
-      message: 'Произошла ошибка при регистрации',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: TOAST_MESSAGES.ERROR.DEFAULT
     });
   }
 };
 
+// Вход
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -127,69 +121,34 @@ export const login = async (req, res) => {
       });
     }
 
+    // Поиск пользователя
     const user = await User.findOne({ email }).select('+password');
-    
     if (!user) {
       return res.status(401).json({ 
         message: 'Неверный email или пароль' 
       });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    // Проверка пароля
+    const isPasswordValid = await user.matchPassword(password);
     if (!isPasswordValid) {
       return res.status(401).json({ 
         message: 'Неверный email или пароль' 
       });
     }
 
+    // Генерация токена
     const token = generateToken(user._id);
 
+    // Настройка cookie
     res.cookie('token', token, {
-  httpOnly: true,
-  secure: true,
-  sameSite: 'none',
-  domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined,
-  maxAge: 30 * 24 * 60 * 60 * 1000
-});
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 30 * 24 * 60 * 60 * 1000
+    });
 
     res.json({
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        position: user.position, // Добавляем должность
-        hourlyRate: user.hourlyRate, // Добавляем ставку
-        status: user.status, // Добавляем статус
-        joinDate: user.joinDate // Добавляем дату начала работы
-      }
-    });
-  } catch (error) {
-    console.error('Ошибка входа:', error);
-    res.status(500).json({ message: 'Ошибка сервера' });
-  }
-};
-// Выход
-export const logout = (req, res) => {
-  res.cookie('token', '', {
-    httpOnly: true,
-    expires: new Date(0)
-  });
-  res.json({ message: 'Выход выполнен успешно' });
-};
-
-// Также обновим getMe
-export const getMe = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id)
-      .select('-password')
-      .lean();
-
-    if (!user) {
-      return res.status(404).json({ message: 'Пользователь не найден' });
-    }
-
-    res.status(200).json({ 
       user: {
         id: user._id,
         name: user.name,
@@ -198,10 +157,77 @@ export const getMe = async (req, res) => {
         position: user.position,
         hourlyRate: user.hourlyRate,
         status: user.status,
+        companyId: user.companyId,
         joinDate: user.joinDate
-      } 
+      }
     });
   } catch (error) {
-    res.status(500).json({ message: 'Ошибка при получении пользователя' });
+    console.error('Ошибка входа:', error);
+    res.status(500).json({ 
+      message: TOAST_MESSAGES.ERROR.LOGIN 
+    });
   }
+};
+
+// Выход
+export const logout = (req, res) => {
+  res.cookie('token', '', {
+    httpOnly: true,
+    expires: new Date(0)
+  });
+  res.json({ message: TOAST_MESSAGES.SUCCESS.LOGOUT });
+};
+
+// Получение данных пользователя
+export const getMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id)
+      .select('-password')
+      .lean();
+
+    if (!user) {
+      return res.status(404).json({ 
+        message: 'Пользователь не найден' 
+      });
+    }
+
+    res.json({ user });
+  } catch (error) {
+    console.error('Ошибка получения данных:', error);
+    res.status(500).json({ 
+      message: TOAST_MESSAGES.ERROR.DEFAULT 
+    });
+  }
+};
+
+// Обновление профиля
+export const updateProfile = async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { $set: req.body },
+      { new: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ 
+        message: 'Пользователь не найден' 
+      });
+    }
+
+    res.json({ user });
+  } catch (error) {
+    console.error('Ошибка обновления профиля:', error);
+    res.status(500).json({ 
+      message: TOAST_MESSAGES.ERROR.PROFILE_UPDATE 
+    });
+  }
+};
+
+export default {
+  register,
+  login,
+  logout,
+  getMe,
+  updateProfile
 };

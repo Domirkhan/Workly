@@ -1,7 +1,9 @@
 import { create } from 'zustand';
 import { format } from 'date-fns';
 import { showToast } from '../utils/toast';
-import { timesheetApi } from '../services/api';
+import { api } from '../services/api';
+import toast from 'react-hot-toast';
+import { TOAST_MESSAGES } from '../constants/toastMessages';
 
 export const useTimesheetStore = create((set, get) => ({
   records: [],
@@ -11,6 +13,16 @@ export const useTimesheetStore = create((set, get) => ({
   clockIn: async (employeeId, employeeName) => {
     try {
       const now = new Date();
+      const loadingToast = toast.loading('Начинаем рабочий день...');
+      
+      // Добавляем вызов API
+      const response = await api.timesheet.clockIn({
+        employeeId,
+        employeeName,
+        date: format(now, 'yyyy-MM-dd'),
+        clockIn: format(now, 'HH:mm')
+      });
+
       const newRecord = {
         id: `record-${Math.random().toString(36).substring(2, 9)}`,
         employeeId,
@@ -26,9 +38,10 @@ export const useTimesheetStore = create((set, get) => ({
         records: [...state.records, newRecord]
       }));
 
-      showToast.success('Рабочий день успешно начат');
+      toast.dismiss(loadingToast);
+      toast.success(TOAST_MESSAGES.SUCCESS.CLOCK_IN);
     } catch (error) {
-      showToast.error('Ошибка при начале рабочего дня');
+      toast.error(TOAST_MESSAGES.ERROR.CLOCK_IN);
       console.error('Ошибка:', error);
     }
   },
@@ -36,6 +49,14 @@ export const useTimesheetStore = create((set, get) => ({
   clockOut: async (recordId, hourlyRate) => {
     try {
       const now = new Date();
+      const loadingToast = toast.loading('Завершаем рабочий день...');
+      
+      // Добавляем вызов API
+      const response = await api.timesheet.clockOut({
+        recordId,
+        clockOut: format(now, 'HH:mm'),
+        hourlyRate
+      });
       
       set(state => ({
         records: state.records.map(record => {
@@ -62,42 +83,43 @@ export const useTimesheetStore = create((set, get) => ({
         })
       }));
 
-      showToast.success('Рабочий день успешно завершен');
+      toast.dismiss(loadingToast);
+      toast.success(TOAST_MESSAGES.SUCCESS.CLOCK_OUT);
     } catch (error) {
-      showToast.error('Ошибка при завершении рабочего дня');
+      toast.error(TOAST_MESSAGES.ERROR.CLOCK_OUT);
       console.error('Ошибка:', error);
     }
   },
   
   fetchEmployeeRecords: async (employeeId) => {
+    const loadingToast = toast.loading('Загрузка данных...');
     set({ isLoading: true, error: null });
+    
     try {
-      // Имитация API запроса
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const response = await api.timesheet.getEmployeeTimesheet(employeeId);
+      set({ records: response.data, isLoading: false });
       
-      const filteredRecords = mockTimeRecords.filter(record => 
-        record.employeeId === employeeId
-      );
-      
-      set({ records: filteredRecords, isLoading: false });
-      showToast.success('Данные успешно загружены');
+      toast.dismiss(loadingToast);
+      toast.success(TOAST_MESSAGES.SUCCESS.DATA_LOADED);
     } catch (error) {
       set({ error: error.message, isLoading: false });
-      showToast.error('Ошибка при загрузке данных');
+      toast.error(TOAST_MESSAGES.ERROR.DATA_LOAD);
     }
   },
   
   fetchAllRecords: async () => {
+    const loadingToast = toast.loading('Загрузка данных...');
     set({ isLoading: true, error: null });
+    
     try {
-      // Имитация API запроса
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const response = await api.timesheet.getAll();
+      set({ records: response.data, isLoading: false });
       
-      set({ records: mockTimeRecords, isLoading: false });
-      showToast.success('Данные успешно загружены');
+      toast.dismiss(loadingToast);
+      toast.success(TOAST_MESSAGES.SUCCESS.DATA_LOADED);
     } catch (error) {
       set({ error: error.message, isLoading: false });
-      showToast.error('Ошибка при загрузке данных');
+      toast.error(TOAST_MESSAGES.ERROR.DATA_LOAD);
     }
   },
 
@@ -110,3 +132,5 @@ export const useTimesheetStore = create((set, get) => ({
     });
   }
 }));
+
+export default useTimesheetStore;

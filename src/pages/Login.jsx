@@ -5,21 +5,36 @@ import Logo from '../components/ui/Logo';
 import Button from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
 import { useAuthStore } from '../stores/authStore';
+import { api } from '../services/api';
+import toast from 'react-hot-toast';
+import { TOAST_MESSAGES } from '../constants/toastMessages';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, isLoading, error } = useAuthStore();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const { login, isLoading } = useAuthStore();
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
   
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
     try {
-      await login({ email, password });
-      const user = useAuthStore.getState().user;
-      if (user) {
-        navigate(user.role === 'admin' ? '/admin' : '/employee');
-      }
+      const { user } = await api.auth.login(formData);
+      
+      // Редирект в зависимости от роли
+      navigate(user.role === 'admin' ? '/admin' : '/employee');
+      
+      toast.success(TOAST_MESSAGES.SUCCESS.LOGIN);
     } catch (error) {
       console.error('Ошибка входа:', error);
     }
@@ -45,11 +60,6 @@ export default function Login() {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <Card className="scale-in">
           <CardContent className="pt-6">
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 text-red-500 rounded-md text-sm">
-                {error}
-              </div>
-            )}
             <form onSubmit={handleSubmit}>
               <div className="space-y-4">
                 <div>
@@ -58,9 +68,10 @@ export default function Login() {
                   </label>
                   <input
                     id="email"
+                    name="email"
                     type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={formData.email}
+                    onChange={handleChange}
                     className="form-input"
                     placeholder="your@email.com"
                     required
@@ -72,9 +83,10 @@ export default function Login() {
                   </label>
                   <input
                     id="password"
+                    name="password"
                     type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={formData.password}
+                    onChange={handleChange}
                     className="form-input"
                     placeholder="••••••••"
                     required

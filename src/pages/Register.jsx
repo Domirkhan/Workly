@@ -5,50 +5,85 @@ import Logo from '../components/ui/Logo';
 import Button from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
 import { useAuthStore } from '../stores/authStore';
+import { api } from '../services/api';
+import toast from 'react-hot-toast';
+import { TOAST_MESSAGES } from '../constants/toastMessages';
 
 export default function Register() {
   const navigate = useNavigate();
-  const { register, isLoading  } = useAuthStore();
+  const { isLoading } = useAuthStore();
   
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'employee'
+    role: 'employee',
+    companyName: ''
   });
   
-  const [error, setError] = useState('');
-  const [formErrors, setFormErrors] = useState({});
+  const [errors, setErrors] = useState({});
 
- 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-    
-    
-    if (formErrors[name]) {
-      setFormErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
+    // Очищаем ошибку поля при изменении
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
-  
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.name.trim()) {
+      newErrors.name = 'Введите ваше имя';
+    }
+    
+    if (!formData.email.trim()) {
+      newErrors.email = 'Введите email';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Некорректный email';
+    }
+    
+    if (!formData.password) {
+      newErrors.password = 'Введите пароль';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Пароль должен содержать минимум 6 символов';
+    }
+    
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Пароли не совпадают';
+    }
+    
+    if (formData.role === 'admin' && !formData.companyName.trim()) {
+      newErrors.companyName = 'Введите название компании';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    if (!validateForm()) return;
+    
     try {
-      await register(formData);
-      navigate(formData.role === 'admin' ? '/admin' : '/employee');
+      const { user } = await api.auth.register(formData);
+      
+      // Редирект в зависимости от роли
+      navigate(user.role === 'admin' ? '/admin' : '/employee');
+      
+      toast.success(TOAST_MESSAGES.SUCCESS.REGISTER);
     } catch (error) {
-      setError(error.message);
+      console.error('Ошибка регистрации:', error);
     }
   };
-  
+
   return (
     <div className="min-h-screen flex flex-col justify-center bg-slate-50 p-4">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -65,15 +100,10 @@ export default function Register() {
           </Link>
         </p>
       </div>
-      
+
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <Card className="scale-in">
           <CardContent className="pt-6">
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 text-red-500 rounded-md text-sm">
-                {error}
-              </div>
-            )}
             <form onSubmit={handleSubmit}>
               <div className="space-y-4">
                 <div>
@@ -87,10 +117,11 @@ export default function Register() {
                     value={formData.role}
                     onChange={handleChange}
                   >
-                    <option value="admin">Руководителем компании</option>
                     <option value="employee">Сотрудником</option>
+                    <option value="admin">Руководителем компании</option>
                   </select>
                 </div>
+
                 <div>
                   <label htmlFor="name" className="form-label">
                     Полное имя
@@ -104,10 +135,11 @@ export default function Register() {
                     onChange={handleChange}
                     placeholder="Иван Иванов"
                   />
-                  {formErrors.name && (
-                    <p className="form-error">{formErrors.name}</p>
+                  {errors.name && (
+                    <p className="form-error">{errors.name}</p>
                   )}
                 </div>
+
                 <div>
                   <label htmlFor="email" className="form-label">
                     Email
@@ -121,10 +153,11 @@ export default function Register() {
                     onChange={handleChange}
                     placeholder="your@email.com"
                   />
-                  {formErrors.email && (
-                    <p className="form-error">{formErrors.email}</p>
+                  {errors.email && (
+                    <p className="form-error">{errors.email}</p>
                   )}
                 </div>
+
                 <div>
                   <label htmlFor="password" className="form-label">
                     Пароль
@@ -138,10 +171,11 @@ export default function Register() {
                     onChange={handleChange}
                     placeholder="••••••••"
                   />
-                  {formErrors.password && (
-                    <p className="form-error">{formErrors.password}</p>
+                  {errors.password && (
+                    <p className="form-error">{errors.password}</p>
                   )}
                 </div>
+
                 <div>
                   <label htmlFor="confirmPassword" className="form-label">
                     Подтвердите пароль
@@ -155,11 +189,12 @@ export default function Register() {
                     onChange={handleChange}
                     placeholder="••••••••"
                   />
-                  {formErrors.confirmPassword && (
-                    <p className="form-error">{formErrors.confirmPassword}</p>
+                  {errors.confirmPassword && (
+                    <p className="form-error">{errors.confirmPassword}</p>
                   )}
                 </div>
-                {formData.role === 'admin' ? (
+
+                {formData.role === 'admin' && (
                   <div>
                     <label htmlFor="companyName" className="form-label">
                       Название компании
@@ -171,13 +206,14 @@ export default function Register() {
                       className="form-input"
                       value={formData.companyName}
                       onChange={handleChange}
-                      placeholder="ООО 'Компания'"
+                      placeholder="ООО Компания"
                     />
-                    {formErrors.companyName && (
-                      <p className="form-error">{formErrors.companyName}</p>
+                    {errors.companyName && (
+                      <p className="form-error">{errors.companyName}</p>
                     )}
                   </div>
-                ): null}
+                )}
+
                 <Button 
                   type="submit" 
                   fullWidth 
