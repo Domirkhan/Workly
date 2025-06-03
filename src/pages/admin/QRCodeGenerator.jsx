@@ -12,13 +12,13 @@ export default function QRCodeGenerator() {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const generateQRCode = async () => {
+ const generateQRCode = async () => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const { data } = await api.company.generateQRCode();
-      setQrData(data.code);
+      const response = await api.company.generateQRCode(); // используем правильное имя метода
+      setQrData(response.code);
       showToast.success('QR-код успешно сгенерирован');
     } catch (error) {
       console.error('Ошибка:', error);

@@ -120,7 +120,7 @@ export const timesheetApi = {
 
 // Компания
 export const companyApi = {
-  generateQrCode: () =>
+  generateQRCode: () =>  // было generateQrCode
     axiosClient.post('/company/qr-code'),
   
   getSettings: () =>
@@ -131,8 +131,9 @@ export const companyApi = {
   
   generateInviteCode: () =>
     axiosClient.post('/company/invite-code'),
+
   validateQRCode: (qrCode) => 
-      axiosClient.post('/company/validate-qr', { qrCode })
+    axiosClient.post('/company/validate-qr', { qrCode })
 };
 
 // Бонусы и штрафы
@@ -158,7 +159,7 @@ export const api = {
   auth: authApi,
   employees: employeeApi,
   timesheet: timesheetApi,
-  company: companyApi,
+  company: companyApi, 
   bonus: bonusApi
 };
 
