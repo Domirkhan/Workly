@@ -5,9 +5,12 @@ import { Filter, Download, X } from 'lucide-react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
+import { api } from '../../services/api';
+import { showToast } from '../../utils/toast';
+import { formatTime } from '../../utils/formatTime';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { formatTime } from '../../utils/formatTime';
+import '@fontsource/roboto/cyrillic.css';
 
 export default function AdminTimesheet() {
   const [monthlyData, setMonthlyData] = useState([]);
@@ -19,107 +22,61 @@ export default function AdminTimesheet() {
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
-const fetchMonthlyData = async () => {
-  setIsLoading(true);
-  try {
-    console.log('Fetching data for month:', filterMonth);
-    const [year, month] = filterMonth.split('-');
-    const response = await fetch(
-      `https://workly-backend.onrender.com/api/v1/timesheet/monthly?month=${month}&year=${year}`,
-      {
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include'
+    const fetchMonthlyData = async () => {
+      try {
+        setIsLoading(true);
+        const [year, month] = filterMonth.split('-');
+
+        const [monthlyData, archiveData] = await Promise.all([
+          api.timesheet.getMonthly(year, month),
+          api.timesheet.getArchiveMonths()
+        ]);
+
+        setMonthlyData(monthlyData);
+        setArchiveMonths(archiveData);
+      } catch (error) {
+        console.error('Ошибка загрузки:', error);
+        showToast.error(error.message || 'Ошибка при загрузке данных');
+        setError(error.message);
+      } finally {
+        setIsLoading(false);
       }
-    );
-    
-    if (!response.ok) {
-      throw new Error('Ошибка при загрузке данных');
-    }
-    
-    const data = await response.json();
-    setMonthlyData(data);
-    
-    // Загружаем архивные месяцы
-    const archiveResponse = await fetch(
-      'https://workly-backend.onrender.com/api/v1/timesheet/archive-months',
-      {
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include'
-      }
-    );
-    
-    if (archiveResponse.ok) {
-      const archiveData = await archiveResponse.json();
-      setArchiveMonths(archiveData);
-    }
-  } catch (err) {
-    console.error('Ошибка загрузки:', err);
-    setError(err.message);
-  } finally {
-    setIsLoading(false);
-  }
-};
+    };
 
     fetchMonthlyData();
   }, [filterMonth]);
 
   const fetchEmployeeDetails = async (employeeId) => {
-  try {
-    setIsLoading(true);
-    const [year, month] = filterMonth.split('-');
-    
-    const response = await fetch(
-      `/api/v1/timesheet/employee/${employeeId}/monthly?month=${month}&year=${year}`,
-      {
-        headers: {
-          'Accept': 'application/json'
-        }
+    try {
+      setIsLoading(true);
+      const [year, month] = filterMonth.split('-');
+      
+      const data = await api.timesheet.getEmployeeMonthlyDetails(employeeId, {
+        month,
+        year
+      });
+
+      setEmployeeDetails(data);
+      setShowModal(true);
+    } catch (error) {
+      console.error('Ошибка загрузки деталей:', error);
+      showToast.error(error.message || 'Ошибка при загрузке деталей сотрудника');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleArchiveMonthClick = (month) => {
+    try {
+      if (!month.match(/^\d{4}-\d{2}$/)) {
+        throw new Error('Неверный формат даты');
       }
-    );
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Ошибка при загрузке деталей сотрудника');
+      setFilterMonth(month);
+    } catch (error) {
+      console.error('Ошибка при выборе месяца:', error);
+      showToast.error(error.message);
     }
-    
-    const data = await response.json();
-    setEmployeeDetails(data);
-    setShowModal(true);
-  } catch (err) {
-    console.error('Ошибка загрузки деталей:', err);
-    setError(err.message);
-  } finally {
-    setIsLoading(false);
-  }
-};
-// Изменим обработчик клика по архивному месяцу
-const handleArchiveMonthClick = (month) => {
-  try {
-    console.log('Clicking archive month:', month);
-    // Проверяем формат месяца
-    if (!month.match(/^\d{4}-\d{2}$/)) {
-      throw new Error('Неверный формат даты');
-    }
-    
-    setIsLoading(true);
-    setFilterMonth(month);
-    
-    // Обновляем UI чтобы показать выбранный месяц
-    const button = document.querySelector(`button[data-month="${month}"]`);
-    if (button) {
-      button.classList.add('bg-blue-50', 'border-blue-500');
-    }
-  } catch (err) {
-    console.error('Ошибка при выборе месяца:', err);
-    setError(err.message);
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   const handleDownloadReport = async () => {
     try {
@@ -137,7 +94,7 @@ const handleArchiveMonthClick = (month) => {
       const tableData = monthlyData.map(item => [
         item.employee.name,
         item.employee.position,
-        item.totalHours.toFixed(1),
+        formatTime(item.totalHours),
         `${item.totalPay.toFixed(2)} тг`
       ]);
       
@@ -147,17 +104,18 @@ const handleArchiveMonthClick = (month) => {
         head: [['Сотрудник', 'Должность', 'Часы', 'Сумма']],
         body: tableData,
         theme: 'grid',
+        styles: { font: 'helvetica', fontSize: 10 },
         headStyles: {
           fillColor: [41, 128, 185],
-          textColor: 255,
-          fontSize: 12
+          textColor: 255
         }
       });
-      
+
       doc.save(`Табель_${format(new Date(filterMonth), 'MM-yyyy')}.pdf`);
+      showToast.success('Отчет успешно сохранен');
     } catch (error) {
       console.error('Ошибка при создании отчета:', error);
-      setError('Ошибка при создании отчета');
+      showToast.error('Ошибка при создании отчета');
     }
   };
 
@@ -206,7 +164,7 @@ const handleArchiveMonthClick = (month) => {
                       {record.clockOut ? format(new Date(record.clockOut), 'HH:mm') : '-'}
                     </td>
                     <td className="px-4 py-3 text-right">
-                        {record.totalHours ? formatTime(record.totalHours) : '-'}
+                      {record.totalHours ? formatTime(record.totalHours) : '-'}
                     </td>
                     <td className="px-4 py-3 text-right">
                       {record.calculatedPay?.toFixed(2) || '-'} тг
@@ -225,7 +183,7 @@ const handleArchiveMonthClick = (month) => {
                 <tr>
                   <td colSpan="3" className="px-4 py-3 font-medium">Итого:</td>
                   <td className="px-4 py-3 text-right font-medium">
-                     {formatTime(employeeDetails.totalHours)}
+                    {formatTime(employeeDetails.totalHours)}
                   </td>
                   <td className="px-4 py-3 text-right font-medium">
                     {employeeDetails.totalPay?.toFixed(2) || '0.00'} тг
@@ -244,16 +202,6 @@ const handleArchiveMonthClick = (month) => {
       <AdminLayout>
         <div className="flex justify-center items-center h-96">
           <p>Загрузка данных...</p>
-        </div>
-      </AdminLayout>
-    );
-  }
-
-  if (error) {
-    return (
-      <AdminLayout>
-        <div className="flex justify-center items-center h-96">
-          <p className="text-red-500">Ошибка: {error}</p>
         </div>
       </AdminLayout>
     );
@@ -350,8 +298,8 @@ const handleArchiveMonthClick = (month) => {
       </Card>
 
       <Card>
-  <CardHeader>
-    <CardTitle>Архив табелей</CardTitle>
+        <CardHeader>
+          <CardTitle>Архив табелей</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -360,7 +308,7 @@ const handleArchiveMonthClick = (month) => {
                 key={stats.month}
                 variant="outline"
                 className={`w-full flex flex-col items-start p-4 h-auto ${
-                  filterMonth === stats.month ? '' : ''
+                  filterMonth === stats.month ? 'bg-blue-50 border-blue-500' : ''
                 }`}
                 onClick={() => handleArchiveMonthClick(stats.month)}
               >

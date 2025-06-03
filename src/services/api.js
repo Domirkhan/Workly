@@ -54,7 +54,7 @@ axiosClient.interceptors.response.use(
 );
 
 // Аутентификация
-export const authApi = {
+export const auth = {
   register: (userData) => 
     axiosClient.post('/auth/register', userData),
   
@@ -72,7 +72,7 @@ export const authApi = {
 };
 
 // Сотрудники
-export const employeeApi = {
+export const employee = {
   getAll: () => 
     axiosClient.get('/employees'),
   
@@ -93,7 +93,7 @@ export const employeeApi = {
 };
 
 // Табель учета времени
-export const timesheetApi = {
+export const timesheet = {
   clockIn: (data) =>
     axiosClient.post('/timesheet/clock-in', data),
   
@@ -110,11 +110,16 @@ export const timesheetApi = {
     axiosClient.get(`/timesheet/employee/${employeeId}`, { params }),
   
   getArchiveMonths: () =>
-    axiosClient.get('/timesheet/archive-months')
+    axiosClient.get('/timesheet/archive-months'),
+    getEmployeeStats: (employeeId) =>
+    axiosClient.get(`/timesheet/employee/${employeeId}/stats`),
+  getEmployeeMonthlyDetails: (employeeId, params) =>
+    axiosClient.get(`/timesheet/employee/${employeeId}/monthly`, { params }),
+
 };
 
 // Компания
-export const companyApi = {
+export const company = {
   generateQrCode: () =>
     axiosClient.post('/company/qr-code'),
   
@@ -125,11 +130,13 @@ export const companyApi = {
     axiosClient.put('/company/settings', data),
   
   generateInviteCode: () =>
-    axiosClient.post('/company/invite-code')
+    axiosClient.post('/company/invite-code'),
+  validateQRCode: (qrCode) => 
+      axiosClient.post('/company/validate-qr', { qrCode })
 };
 
 // Бонусы и штрафы
-export const bonusApi = {
+export const bonus = {
   create: (data) =>
     axiosClient.post('/bonuses', data),
   

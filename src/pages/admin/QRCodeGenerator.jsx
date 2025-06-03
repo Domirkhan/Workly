@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { QrCode } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
+import { Card, CardContent } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import AdminLayout from '../../components/layout/AdminLayout';
+import { api } from '../../services/api';
+import { showToast } from '../../utils/toast';
 
 export default function QRCodeGenerator() {
   const [qrData, setQrData] = useState(null);
@@ -15,28 +17,16 @@ export default function QRCodeGenerator() {
     setError(null);
     
     try {
-      const response = await fetch('https://workly-backend.onrender.com/api/v1/company/qr-code', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error('Ошибка при генерации QR-кода');
-      }
-
-    const data = await response.json();
-    setQrData(data.code);
-    showToast.success('QR-код успешно сгенерирован');
-  } catch (err) {
-    console.error('Ошибка:', err);
-    setError(err.message);
-    showToast.error(`Ошибка: ${err.message}`);
-  } finally {
-    setIsLoading(false);
-  }
+      const { data } = await api.company.generateQRCode();
+      setQrData(data.code);
+      showToast.success('QR-код успешно сгенерирован');
+    } catch (error) {
+      console.error('Ошибка:', error);
+      setError(error.response?.data?.message || 'Ошибка при генерации QR-кода');
+      showToast.error(error.response?.data?.message || 'Ошибка при генерации QR-кода');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -49,11 +39,11 @@ export default function QRCodeGenerator() {
       <Card>
         <CardContent className="p-6">
           <div className="flex flex-col items-center space-y-6">
-            {qrData ? (
+            {qrData && (
               <div className="p-4 bg-white rounded-lg shadow-lg">
                 <QRCodeSVG value={qrData} size={256} />
               </div>
-            ) : null}
+            )}
             
             <Button
               onClick={generateQRCode}

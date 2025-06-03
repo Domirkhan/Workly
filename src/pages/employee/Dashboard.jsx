@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { Clock, DollarSign, Calendar, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Clock, DollarSign, Calendar, CheckCircle2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useNavigate } from 'react-router-dom';
-import { formatTime } from '../../utils/formatTime';
-
 import EmployeeLayout from '../../components/layout/EmployeeLayout';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { useAuthStore } from '../../stores/authStore';
 import { useTimesheetStore } from '../../stores/timesheetStore';
+import { formatTime } from '../../utils/formatTime';
+import { api } from '../../services/api';
+import { showToast } from '../../utils/toast';
 
 export default function EmployeeDashboard() {
   const navigate = useNavigate();
@@ -26,45 +27,38 @@ export default function EmployeeDashboard() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-const fetchData = async () => {
-  if (!user?.id) return;
+    const fetchData = async () => {
+      if (!user?.id) return;
 
-  try {
-    setIsLoading(true);
-    setError(null);
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // Получаем записи и статистику параллельно
+        const [recordsResponse, statsResponse] = await Promise.all([
+          fetchEmployeeRecords(user.id),
+          api.timesheet.getEmployeeStats(user.id)
+        ]);
+
+        setStats({
+          totalHours: statsResponse.data.totalHours || 0,
+          totalEarnings: statsResponse.data.totalEarnings || 0,
+          hoursThisWeek: statsResponse.data.hoursThisWeek || 0,
+          attendanceRate: statsResponse.data.attendanceRate || 0
+        });
+
+        showToast.success('Данные успешно загружены');
+      } catch (err) {
+        console.error('Ошибка загрузки данных:', err);
+        setError(err.response?.data?.message || 'Произошла ошибка при загрузке данных');
+        showToast.error(err.response?.data?.message || 'Произошла ошибка при загрузке данных');
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
-    // Получаем записи
-    await fetchEmployeeRecords(user.id);
-    
-    // Получаем статистику
-    const response = await fetch('https://workly-backend.onrender.com/api/v1/timesheet/employee/stats', {
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      credentials: 'include'
-    });
-
-    if (!response.ok) {
-      throw new Error('Ошибка при получении статистики');
-    }
-
-    const statsData = await response.json();
-    setStats({
-      totalHours: statsData.totalHours || 0,
-      totalEarnings: statsData.totalEarnings || 0,
-      hoursThisWeek: statsData.hoursThisWeek || 0,
-      attendanceRate: statsData.attendanceRate || 0
-    });
-  } catch (err) {
-    console.error('Ошибка загрузки данных:', err);
-    setError(err.message);
-  } finally {
-    setIsLoading(false);
-  }
-};
-  
     fetchData();
-  }, [user, fetchEmployeeRecords]);
+  }, [user?.id, fetchEmployeeRecords]);
 
   // Проверяем текущую отметку
   const today = format(new Date(), 'yyyy-MM-dd');
@@ -79,13 +73,20 @@ const fetchData = async () => {
     .slice(-7)
     .map(record => ({
       date: format(new Date(record.date), 'EEE', { locale: ru }),
-      hours: record.totalHours
+      hours: Number(record.totalHours.toFixed(1))
     }));
 
-  const handleClockIn = () => {
-    if (user) {
-      clockIn(user.id);
+  const handleClockIn = async () => {
+    try {
+      if (!user?.id) return;
+      
+      const loadingToast = showToast.loading('Начинаем рабочий день...');
+      await clockIn(user.id);
+      showToast.dismiss(loadingToast);
+      showToast.success('Рабочий день начат');
       navigate('/employee/clock');
+    } catch (error) {
+      showToast.error(error.response?.data?.message || 'Ошибка при начале рабочего дня');
     }
   };
 
@@ -97,7 +98,10 @@ const fetchData = async () => {
     return (
       <EmployeeLayout>
         <div className="flex justify-center items-center h-96">
-          <p>Загрузка данных...</p>
+          <div className="animate-pulse space-y-4">
+            <div className="h-4 w-48 bg-slate-200 rounded"></div>
+            <div className="h-4 w-36 bg-slate-200 rounded"></div>
+          </div>
         </div>
       </EmployeeLayout>
     );
@@ -107,7 +111,15 @@ const fetchData = async () => {
     return (
       <EmployeeLayout>
         <div className="flex justify-center items-center h-96">
-          <p className="text-red-500">Ошибка: {error}</p>
+          <div className="text-center">
+            <p className="text-red-500 mb-4">{error}</p>
+            <Button 
+              variant="outline"
+              onClick={() => window.location.reload()}
+            >
+              Попробовать снова
+            </Button>
+          </div>
         </div>
       </EmployeeLayout>
     );
@@ -168,13 +180,13 @@ const fetchData = async () => {
               <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-800 mr-4">
                 <Clock className="w-6 h-6" />
               </div>
-             <div>
-              <p className="text-sm font-medium text-slate-500">Всего часов</p>
-              <h3 className="text-2xl font-bold text-slate-900">
-                {formatTime(stats.totalHours)}
-              </h3>
-              <p className="text-xs text-blue-600">За все время</p>
-            </div>
+              <div>
+                <p className="text-sm font-medium text-slate-500">Всего часов</p>
+                <h3 className="text-2xl font-bold text-slate-900">
+                  {formatTime(stats.totalHours)}
+                </h3>
+                <p className="text-xs text-blue-600">За все время</p>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -188,7 +200,10 @@ const fetchData = async () => {
               <div>
                 <p className="text-sm font-medium text-slate-500">Общий заработок</p>
                 <h3 className="text-2xl font-bold text-slate-900">
-                  {stats.totalEarnings.toFixed(2)}тг
+                  {stats.totalEarnings.toLocaleString('ru-RU', {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                  })} тг
                 </h3>
                 <p className="text-xs text-teal-600">За все время</p>
               </div>
@@ -203,7 +218,7 @@ const fetchData = async () => {
                 <Calendar className="w-6 h-6" />
               </div>
               <div>
-               <p className="text-sm font-medium text-slate-500">Эта неделя</p>
+                <p className="text-sm font-medium text-slate-500">Эта неделя</p>
                 <h3 className="text-2xl font-bold text-slate-900">
                   {formatTime(stats.hoursThisWeek)}
                 </h3>
@@ -231,7 +246,40 @@ const fetchData = async () => {
         </Card>
       </div>
 
-      
+      {/* График */}
+      {chartData.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Динамика часов за неделю</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <XAxis dataKey="date" stroke="#94a3b8" />
+                  <YAxis stroke="#94a3b8" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#fff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="hours"
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    dot={{ fill: '#3b82f6' }}
+                    name="Часов"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </EmployeeLayout>
   );
 }

@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PlusCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import { ru } from 'date-fns/locale';
 import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Bar } from 'recharts';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { formatTime } from '../../utils/formatTime';
-import { employeeApi, timesheetApi } from '../../services/api';
+import { api } from '../../services/api';
+import { showToast } from '../../utils/toast';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -32,15 +34,15 @@ export default function AdminDashboard() {
 
       // Получаем данные сотрудников и записи времени параллельно
       const [employeesData, timesheetData] = await Promise.all([
-        employeeApi.getAll(),
-        timesheetApi.getAll()
+        api.employees.getAll(),
+        api.timesheet.getAll()
       ]);
 
       // Расчет часов по сотрудникам
       const hoursMap = {};
       let totalRevenue = 0;
 
-      timesheetData.forEach((record) => {
+      timesheetData.data.forEach((record) => {
         if (record.totalHours && record.employeeId) {
           hoursMap[record.employeeId] = (hoursMap[record.employeeId] || 0) + record.totalHours;
           if (record.calculatedPay) {
@@ -50,11 +52,11 @@ export default function AdminDashboard() {
       });
 
       // Формируем данные сотрудников с часами
-      const employeesWithHours = employeesData.map(employee => ({
-        id: employee.id,
+      const employeesWithHours = employeesData.data.map(employee => ({
+        id: employee._id,
         name: employee.name,
         position: employee.position,
-        totalHours: Number((hoursMap[employee.id] || 0).toFixed(2)),
+        totalHours: Number((hoursMap[employee._id] || 0).toFixed(2)),
         hourlyRate: employee.hourlyRate || 0
       }));
 
@@ -64,7 +66,7 @@ export default function AdminDashboard() {
 
       // Расчет данных для графика
       const dailyHours = {};
-      timesheetData.forEach((record) => {
+      timesheetData.data.forEach((record) => {
         if (record.totalHours) {
           const dateKey = format(new Date(record.date), 'yyyy-MM-dd');
           dailyHours[dateKey] = (dailyHours[dateKey] || 0) + record.totalHours;
@@ -75,7 +77,7 @@ export default function AdminDashboard() {
       const chartData = Object.entries(dailyHours)
         .sort(([a], [b]) => new Date(a) - new Date(b))
         .map(([date, hours]) => ({
-          date: format(new Date(date), 'dd.MM'),
+          date: format(new Date(date), 'dd.MM', { locale: ru }),
           hours: Number(hours.toFixed(1))
         }));
 
@@ -83,14 +85,16 @@ export default function AdminDashboard() {
 
       // Обновление статистики
       setStats({
-        totalEmployees: employeesData.length,
-        activeEmployees: employeesData.filter(emp => emp.status === 'active').length,
+        totalEmployees: employeesData.data.length,
+        activeEmployees: employeesData.data.filter(emp => emp.status === 'active').length,
         totalRevenue
       });
 
+      showToast.success('Данные успешно загружены');
     } catch (error) {
       console.error('Ошибка загрузки данных:', error);
-      setError(error.message);
+      setError(error.response?.data?.message || 'Произошла ошибка при загрузке данных');
+      showToast.error(error.response?.data?.message || 'Произошла ошибка при загрузке данных');
     } finally {
       setIsLoading(false);
     }

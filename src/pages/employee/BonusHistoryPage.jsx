@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import { PlusCircle, MinusCircle } from 'lucide-react';
 import EmployeeLayout from '../../components/layout/EmployeeLayout';
 import { Card } from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
 import { useAuthStore } from '../../stores/authStore';
+import { api } from '../../services/api';
 import { showToast } from '../../utils/toast';
 
 export default function BonusHistoryPage() {
@@ -16,20 +19,14 @@ export default function BonusHistoryPage() {
     const fetchBonuses = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(`/api/v1/bonuses/employee/${user.id}`);
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Ошибка при загрузке данных');
-        }
-        
-        const data = await response.json();
+        setError(null);
+        const { data } = await api.bonuses.getEmployeeBonuses(user.id);
         setBonuses(data);
-        showToast.success('Данные успешно загружены');
+        showToast.success('История начислений загружена');
       } catch (error) {
         console.error('Ошибка при загрузке премий/штрафов:', error);
-        setError(error.message);
-        showToast.error(`Ошибка: ${error.message}`);
+        setError(error.response?.data?.message || 'Ошибка при загрузке данных');
+        showToast.error(error.response?.data?.message || 'Ошибка при загрузке данных');
       } finally {
         setIsLoading(false);
       }
@@ -40,45 +37,43 @@ export default function BonusHistoryPage() {
     }
   }, [user?.id]);
   
+  // Вычисляем общую сумму премий и штрафов
+  const totals = bonuses.reduce((acc, bonus) => ({
+    totalBonus: acc.totalBonus + (bonus.type === 'bonus' ? bonus.amount : 0),
+    totalPenalty: acc.totalPenalty + (bonus.type === 'penalty' ? bonus.amount : 0)
+  }), { totalBonus: 0, totalPenalty: 0 });
+
   if (isLoading) {
     return (
       <EmployeeLayout>
         <div className="flex justify-center items-center h-96">
-          <div className="animate-pulse">
+          <div className="animate-pulse space-y-4">
             <div className="h-4 w-48 bg-slate-200 rounded"></div>
+            <div className="h-4 w-36 bg-slate-200 rounded"></div>
           </div>
         </div>
       </EmployeeLayout>
     );
   }
 
-  // Вычисляем общую сумму премий и штрафов
-  const totals = bonuses.reduce((acc, bonus) => {
-    if (bonus.type === 'bonus') {
-      acc.totalBonus += bonus.amount;
-    } else {
-      acc.totalPenalty += bonus.amount;
-    }
-    return acc;
-  }, { totalBonus: 0, totalPenalty: 0 });
-if (error) {
-  return (
-    <EmployeeLayout>
-      <div className="flex justify-center items-center h-96">
-        <div className="text-center text-red-500">
-          <p>Ошибка: {error}</p>
-          <Button 
-            variant="outline"
-            className="mt-4"
-            onClick={() => window.location.reload()}
-          >
-            Попробовать снова
-          </Button>
+  if (error) {
+    return (
+      <EmployeeLayout>
+        <div className="flex justify-center items-center h-96">
+          <div className="text-center">
+            <p className="text-red-500 mb-4">{error}</p>
+            <Button 
+              variant="outline"
+              onClick={() => window.location.reload()}
+            >
+              Попробовать снова
+            </Button>
+          </div>
         </div>
-      </div>
-    </EmployeeLayout>
-  );
-}
+      </EmployeeLayout>
+    );
+  }
+
   return (
     <EmployeeLayout>
       <div className="max-w-4xl mx-auto px-4 py-8">
@@ -93,18 +88,29 @@ if (error) {
         </div>
 
         {/* Статистика */}
-        <div className="grid grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
           <Card className="p-6 bg-green-50 border-green-100">
-            <p className="text-sm text-green-600 mb-1">Всего премий</p>
-            <p className="text-2xl font-bold text-green-700">
-              {totals.totalBonus.toLocaleString('ru-RU')} тг
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-green-600 mb-1">Всего премий</p>
+                <p className="text-2xl font-bold text-green-700">
+                  {totals.totalBonus.toLocaleString('ru-RU')} тг
+                </p>
+              </div>
+              <PlusCircle className="w-8 h-8 text-green-500" />
+            </div>
           </Card>
+          
           <Card className="p-6 bg-red-50 border-red-100">
-            <p className="text-sm text-red-600 mb-1">Всего штрафов</p>
-            <p className="text-2xl font-bold text-red-700">
-              {totals.totalPenalty.toLocaleString('ru-RU')} тг
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-red-600 mb-1">Всего штрафов</p>
+                <p className="text-2xl font-bold text-red-700">
+                  {totals.totalPenalty.toLocaleString('ru-RU')} тг
+                </p>
+              </div>
+              <MinusCircle className="w-8 h-8 text-red-500" />
+            </div>
           </Card>
         </div>
 
@@ -125,15 +131,13 @@ if (error) {
                   <div className="flex-1">
                     <div className="flex items-center mb-2">
                       {bonus.type === 'bonus' ? (
-                        <svg className="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m6-6H6" />
-                        </svg>
+                        <PlusCircle className="w-5 h-5 text-green-500 mr-2" />
                       ) : (
-                        <svg className="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 12H6" />
-                        </svg>
+                        <MinusCircle className="w-5 h-5 text-red-500 mr-2" />
                       )}
-                      <span className={`font-medium ${bonus.type === 'bonus' ? 'text-green-700' : 'text-red-700'}`}>
+                      <span className={`font-medium ${
+                        bonus.type === 'bonus' ? 'text-green-700' : 'text-red-700'
+                      }`}>
                         {bonus.amount.toLocaleString('ru-RU')} тг
                       </span>
                     </div>
@@ -144,7 +148,7 @@ if (error) {
                       {format(new Date(bonus.date), 'd MMMM yyyy', { locale: ru })}
                     </p>
                     <p className="text-xs text-slate-400 mt-1">
-                      {bonus.createdBy.name}
+                      Назначил: {bonus.createdBy?.name || 'Система'}
                     </p>
                   </div>
                 </div>
@@ -154,21 +158,26 @@ if (error) {
           
           {bonuses.length === 0 && (
             <div className="text-center py-12">
-              <svg 
-                className="mx-auto h-12 w-12 text-slate-400" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={1} 
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
-                />
-              </svg>
-              <p className="mt-4 text-slate-500">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
+                <svg 
+                  className="w-8 h-8 text-slate-400" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={1.5} 
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
+                  />
+                </svg>
+              </div>
+              <p className="text-lg font-medium text-slate-900">
                 История начислений пуста
+              </p>
+              <p className="mt-2 text-slate-500">
+                У вас пока нет премий и штрафов
               </p>
             </div>
           )}
