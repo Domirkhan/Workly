@@ -54,7 +54,7 @@ axiosClient.interceptors.response.use(
 );
 
 // Аутентификация
-export const auth = {
+export const authApi = {
   register: (userData) => 
     axiosClient.post('/auth/register', userData),
   
@@ -72,7 +72,7 @@ export const auth = {
 };
 
 // Сотрудники
-export const employee = {
+export const employeeApi = {
   getAll: () => 
     axiosClient.get('/employees'),
   
@@ -93,7 +93,7 @@ export const employee = {
 };
 
 // Табель учета времени
-export const timesheet = {
+export const timesheetApi = {
   clockIn: (data) =>
     axiosClient.post('/timesheet/clock-in', data),
   
@@ -119,7 +119,7 @@ export const timesheet = {
 };
 
 // Компания
-export const company = {
+export const companyApi = {
   generateQrCode: () =>
     axiosClient.post('/company/qr-code'),
   
@@ -136,7 +136,7 @@ export const company = {
 };
 
 // Бонусы и штрафы
-export const bonus = {
+export const bonusApi = {
   create: (data) =>
     axiosClient.post('/bonuses', data),
   
