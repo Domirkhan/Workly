@@ -21,7 +21,8 @@ export default defineConfig({
           ],
           utils: [
             'date-fns',
-            'zustand'
+            'zustand',
+            'react-hot-toast'
           ]
         }
       }

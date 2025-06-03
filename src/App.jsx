@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { ToastContainer } from 'react-toastify';
+import { Toaster } from 'react-hot-toast';
 import 'react-toastify/dist/ReactToastify.css';
 
 // Страницы для публичного доступа
@@ -121,17 +121,31 @@ function App() {
         } />
       </Routes>
 
-      <ToastContainer
+       <Toaster 
         position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            borderRadius: '8px',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            padding: '12px 24px',
+            fontSize: '14px',
+            maxWidth: '400px'
+          },
+          success: {
+            style: {
+              background: '#10B981',
+              color: '#fff'
+            }
+          },
+          error: {
+            style: {
+              background: '#EF4444',
+              color: '#fff'
+            },
+            duration: 4000
+          }
+        }}
       />
     </>
   );

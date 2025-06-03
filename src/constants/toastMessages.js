@@ -10,7 +10,9 @@ export const TOAST_MESSAGES = {
     CLOCK_IN: 'Рабочий день начат',
     CLOCK_OUT: 'Рабочий день завершен',
     BONUS_ADDED: 'Премия успешно начислена',
-    PENALTY_ADDED: 'Штраф успешно назначен'
+    PENALTY_ADDED: 'Штраф успешно назначен',
+    PROFILE_UPDATED: 'Профиль успешно обновлен',
+    SETTINGS_UPDATED: 'Настройки успешно обновлены'
   },
   ERROR: {
     DEFAULT: 'Произошла ошибка',
@@ -24,6 +26,12 @@ export const TOAST_MESSAGES = {
     CLOCK_IN: 'Ошибка при начале рабочего дня',
     CLOCK_OUT: 'Ошибка при завершении рабочего дня',
     BONUS_ADD: 'Ошибка при начислении премии',
-    PENALTY_ADD: 'Ошибка при назначении штрафа'
+    PENALTY_ADD: 'Ошибка при назначении штрафа',
+    PROFILE_UPDATE: 'Ошибка при обновлении профиля',
+    SETTINGS_UPDATE: 'Ошибка при обновлении настроек',
+    SERVER: 'Ошибка сервера',
+    VALIDATION: 'Ошибка валидации данных',
+    UNAUTHORIZED: 'Необходима авторизация',
+    FORBIDDEN: 'Доступ запрещен'
   }
 };
