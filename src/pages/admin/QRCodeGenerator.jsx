@@ -27,19 +27,16 @@ export default function QRCodeGenerator() {
         throw new Error('Ошибка при генерации QR-кода');
       }
 
-      const data = await response.json();
-      
-      if (!data.code) {
-        throw new Error('Некорректный ответ от сервера');
-      }
-
-      setQrData(data.code);
-    } catch (err) {
-      console.error('Ошибка:', err);
-      setError(err.message || 'Ошибка при генерации QR-кода');
-    } finally {
-      setIsLoading(false);
-    }
+    const data = await response.json();
+    setQrData(data.code);
+    showToast.success('QR-код успешно сгенерирован');
+  } catch (err) {
+    console.error('Ошибка:', err);
+    setError(err.message);
+    showToast.error(`Ошибка: ${err.message}`);
+  } finally {
+    setIsLoading(false);
+  }
   };
 
   return (

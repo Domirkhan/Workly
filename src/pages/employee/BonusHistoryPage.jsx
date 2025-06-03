@@ -4,20 +4,32 @@ import { ru } from 'date-fns/locale';
 import EmployeeLayout from '../../components/layout/EmployeeLayout';
 import { Card } from '../../components/ui/Card';
 import { useAuthStore } from '../../stores/authStore';
+import { showToast } from '../../utils/toast';
 
 export default function BonusHistoryPage() {
   const [bonuses, setBonuses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuthStore();
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchBonuses = async () => {
       try {
+        setIsLoading(true);
         const response = await fetch(`/api/v1/bonuses/employee/${user.id}`);
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Ошибка при загрузке данных');
+        }
+        
         const data = await response.json();
         setBonuses(data);
+        showToast.success('Данные успешно загружены');
       } catch (error) {
         console.error('Ошибка при загрузке премий/штрафов:', error);
+        setError(error.message);
+        showToast.error(`Ошибка: ${error.message}`);
       } finally {
         setIsLoading(false);
       }
@@ -27,7 +39,7 @@ export default function BonusHistoryPage() {
       fetchBonuses();
     }
   }, [user?.id]);
-
+  
   if (isLoading) {
     return (
       <EmployeeLayout>
@@ -49,7 +61,24 @@ export default function BonusHistoryPage() {
     }
     return acc;
   }, { totalBonus: 0, totalPenalty: 0 });
-
+if (error) {
+  return (
+    <EmployeeLayout>
+      <div className="flex justify-center items-center h-96">
+        <div className="text-center text-red-500">
+          <p>Ошибка: {error}</p>
+          <Button 
+            variant="outline"
+            className="mt-4"
+            onClick={() => window.location.reload()}
+          >
+            Попробовать снова
+          </Button>
+        </div>
+      </div>
+    </EmployeeLayout>
+  );
+}
   return (
     <EmployeeLayout>
       <div className="max-w-4xl mx-auto px-4 py-8">

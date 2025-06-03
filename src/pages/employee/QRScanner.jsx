@@ -6,7 +6,7 @@ import Button from '../../components/ui/Button';
 import { timesheetApi } from '../../services/api';
 import EmployeeLayout from '../../components/layout/EmployeeLayout';
 import { useNavigate } from 'react-router-dom'; // Добавляем для навигации
-
+import { showToast } from '../../utils/toast';
 export default function QRScanner() {
   const navigate = useNavigate(); // Для перенаправления после успешного сканирования
   const [isScanning, setIsScanning] = useState(false);
@@ -41,34 +41,55 @@ export default function QRScanner() {
     };
   }, [isScanning, scanType]);
 
-  const handleScan = async (decodedText) => {
-    try {
-      console.log('Отсканированный QR-код:', decodedText);
-      
-      let response;
-      if (scanType === 'in') {
-        response = await timesheetApi.clockIn({ qrCode: decodedText });
-      } else {
-        response = await timesheetApi.clockOut({ qrCode: decodedText });
-      }
-      
-      console.log('Ответ сервера:', response);
-      
-      setIsScanning(false);
-      setSuccess(true);
-      
-      // Перенаправляем на страницу табеля после успешного сканирования
-      setTimeout(() => {
-        setSuccess(false);
-        navigate('/employee/timesheet');
-      }, 2000);
-      
-    } catch (error) {
-      setError(error.message);
-      console.error('Ошибка при отправке кода:', error);
-      setTimeout(() => setError(null), 3000);
+const handleScan = async (decodedText) => {
+  try {
+    console.log('Отсканированный QR-код:', decodedText);
+    
+    let response;
+    if (scanType === 'in') {
+      response = await timesheetApi.clockIn({ qrCode: decodedText });
+      showToast.success('Рабочий день успешно начат');
+    } else {
+      response = await timesheetApi.clockOut({ qrCode: decodedText });
+      showToast.success('Рабочий день успешно завершен');
     }
-  };
+    
+    console.log('Ответ сервера:', response);
+    
+    setIsScanning(false);
+    setSuccess(true);
+    
+    // Очищаем сканер и состояние
+    if (window.html5QrcodeScanner) {
+      window.html5QrcodeScanner.clear();
+    }
+    
+    // Перенаправляем на страницу табеля после успешного сканирования
+    setTimeout(() => {
+      setSuccess(false);
+      setIsScanning(false);
+      setScanType(null);
+      navigate('/employee/timesheet');
+    }, 2000);
+    
+  } catch (error) {
+    console.error('Ошибка при отправке кода:', error);
+    setError(error.message);
+    showToast.error(`Ошибка: ${error.message}`);
+    
+    // Автоматически скрываем ошибку через 3 секунды
+    setTimeout(() => {
+      setError(null);
+      setIsScanning(false);
+      setScanType(null);
+    }, 3000);
+    
+    // Очищаем сканер при ошибке
+    if (window.html5QrcodeScanner) {
+      window.html5QrcodeScanner.clear();
+    }
+  }
+};
 
   const handleError = (error) => {
     console.warn('Ошибка сканирования:', error);

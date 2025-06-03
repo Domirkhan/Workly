@@ -64,12 +64,29 @@ export const createBonus = async (req, res) => {
 
 export const getEmployeeBonuses = async (req, res) => {
   try {
-    const bonuses = await Bonus.find({ employee: req.params.employeeId })
+    const { employeeId } = req.params;
+
+    // Проверяем валидность ID
+    if (!mongoose.Types.ObjectId.isValid(employeeId)) {
+      return res.status(400).json({ message: 'Неверный формат ID сотрудника' });
+    }
+
+    // Проверяем существование сотрудника
+    const employee = await User.findById(employeeId);
+    if (!employee) {
+      return res.status(404).json({ message: 'Сотрудник не найден' });
+    }
+
+    const bonuses = await Bonus.find({ employee: employeeId })
       .sort('-date')
       .populate('createdBy', 'name');
     
     res.json(bonuses);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Ошибка при получении бонусов:', error);
+    res.status(500).json({ 
+      message: 'Ошибка при получении истории бонусов',
+      error: error.message 
+    });
   }
 };

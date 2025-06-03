@@ -1,36 +1,37 @@
-import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { createContext } from 'react';
-import { useAuthStore } from './stores/authStore';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
+// Страницы для публичного доступа
+import LandingPage from './pages/Landing';
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
 
-// Pages
-import Login from './pages/Login';
-import Register from './pages/Register';
+// Страницы администратора
 import AdminDashboard from './pages/admin/Dashboard';
-import EmployeeDashboard from './pages/employee/Dashboard';
+import EmployeeList from './pages/admin/EmployeeList';
 import AddEmployee from './pages/admin/AddEmployee';
-import AdminEmployeeProfile from './pages/admin/EmployeeProfile';
+import EmployeeProfile from './pages/admin/EmployeeProfile';
+import AdminTimesheet from './pages/admin/AdminTimesheet';
+import QRCodeGenerator from './pages/admin/QRCodeGenerator';
+import Settings from './pages/admin/Settings';
+
+// Страницы сотрудника
+import EmployeeDashboard from './pages/employee/Dashboard';
 import EmployeeTimesheet from './pages/employee/Timesheet';
 import QRScanner from './pages/employee/QRScanner';
-import AdminTimesheet from './pages/admin/AdminTimesheet';
-import AdminSettings from './pages/admin/Settings';
-import EmployeeProfile from './pages/employee/Profile';
-import QRCodeGenerator from './pages/admin/QRCodeGenerator';
-import LandingPage from './pages/LandingPage';
-import NotFound from './pages/NotFound';
-import EmployeeList from './pages/admin/EmployeeList';
 import BonusHistoryPage from './pages/employee/BonusHistoryPage';
-// Components
+import Profile from './pages/employee/Profile';
+
+// Компоненты и хуки
 import ProtectedRoute from './components/auth/ProtectedRoute';
-
-
+import { useAuthStore } from './stores/authStore';
+import { useEffect } from 'react';
 
 function App() {
   const { user, checkAuth } = useAuthStore();
 
-
-    useEffect(() => {
+  useEffect(() => {
     const initAuth = async () => {
       try {
         await checkAuth();
@@ -40,94 +41,99 @@ function App() {
     };
 
     initAuth();
-  }, []);
+  }, [checkAuth]);
 
   return (
-   
-     
-        <Routes>
-          {/* Публичные маршруты */}
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          
-          {/* Маршруты администратора */}
-          <Route path="/admin" element={
-            <ProtectedRoute role="admin">
-              <AdminDashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/employees" element={
-            <ProtectedRoute role="admin">
-              <EmployeeList /> 
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/add-employee" element={
-            <ProtectedRoute role="admin">
-              <AddEmployee />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/employee/:id" element={
-            <ProtectedRoute role="admin">
-              <AdminEmployeeProfile />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/timesheets" element={
-            <ProtectedRoute role="admin">
-              <AdminTimesheet />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/settings" element={
-            <ProtectedRoute role="admin">
-              <AdminSettings />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/qr-generator" element={
-            <ProtectedRoute role="admin">
-              <QRCodeGenerator />
-            </ProtectedRoute>
-          } />
-          
-          {/* Маршруты сотрудника */}
-          <Route path="/employee" element={
-            <ProtectedRoute role="employee">
-              <EmployeeDashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/employee/timesheet" element={
-            <ProtectedRoute role="employee">
-              <EmployeeTimesheet />
-            </ProtectedRoute>
-          } />
-          <Route path="/employee/clock" element={
-            <ProtectedRoute role="employee">
-              <QRScanner />
-            </ProtectedRoute>
-          } />
-          <Route path="/employee/profile" element={
-            <ProtectedRoute role="employee">
-              <EmployeeProfile />
-            </ProtectedRoute>
-          } />
-          <Route
-            path="/bonus-history"
-            element={
-              <ProtectedRoute>
-                <BonusHistoryPage />
-              </ProtectedRoute>
-            }
-          />
+    <>
+      <Routes>
+        {/* Публичные маршруты */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        
+        {/* Маршруты администратора */}
+        <Route path="/admin" element={
+          <ProtectedRoute role="admin">
+            <AdminDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/employees" element={
+          <ProtectedRoute role="admin">
+            <EmployeeList />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/add-employee" element={
+          <ProtectedRoute role="admin">
+            <AddEmployee />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/employee/:id" element={
+          <ProtectedRoute role="admin">
+            <EmployeeProfile />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/timesheet" element={
+          <ProtectedRoute role="admin">
+            <AdminTimesheet />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/qr-code" element={
+          <ProtectedRoute role="admin">
+            <QRCodeGenerator />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/settings" element={
+          <ProtectedRoute role="admin">
+            <Settings />
+          </ProtectedRoute>
+        } />
 
-          {/* Редирект с /dashboard на соответствующую панель */}
-          <Route path="/dashboard" element={
-            <Navigate to={user?.role === 'admin' ? '/admin' : '/employee'} replace />
-          } />
-          
-          {/* 404 страница */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-   
-    
+        {/* Маршруты сотрудника */}
+        <Route path="/employee" element={
+          <ProtectedRoute role="employee">
+            <EmployeeDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/employee/timesheet" element={
+          <ProtectedRoute role="employee">
+            <EmployeeTimesheet />
+          </ProtectedRoute>
+        } />
+        <Route path="/employee/scan" element={
+          <ProtectedRoute role="employee">
+            <QRScanner />
+          </ProtectedRoute>
+        } />
+        <Route path="/employee/bonuses" element={
+          <ProtectedRoute role="employee">
+            <BonusHistoryPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/employee/profile" element={
+          <ProtectedRoute role="employee">
+            <Profile />
+          </ProtectedRoute>
+        } />
+
+        {/* Редирект с несуществующих маршрутов */}
+        <Route path="*" element={
+          <Navigate to={user ? (user.role === 'admin' ? '/admin' : '/employee') : '/'} replace />
+        } />
+      </Routes>
+
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+    </>
   );
 }
 

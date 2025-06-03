@@ -63,26 +63,23 @@ export const useAuthStore = create(
         }
       },
 
-      login: async (credentials) => {
-  try {
-    set({ isLoading: true, error: null });
-    const data = await fetchWithAuth('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(credentials)
-    });
+     login: async (credentials) => {
+        try {
+          set({ isLoading: true, error: null });
+          const data = await fetchWithAuth('/auth/login', {
+            method: 'POST',
+            body: JSON.stringify(credentials)
+          });
 
-    set({ 
-      user: data.user, 
-      isLoading: false, 
-      error: null 
-    });
-    return data.user;
-  } catch (error) {
-    console.error('Ошибка входа:', error);
-    set({ error: error.message, isLoading: false });
-    throw error;
-  }
-},
+          set({ user: data.user, isLoading: false, error: null });
+          showToast.success('Вход выполнен успешно');
+          return data.user;
+        } catch (error) {
+          showToast.error(error.message);
+          set({ error: error.message, isLoading: false });
+          throw error;
+        }
+      },
 
       register: async (userData) => {
         try {
@@ -105,22 +102,39 @@ export const useAuthStore = create(
         }
       },
 
-      logout: async () => {
-        try {
-          set({ isLoading: true, error: null });
-          await fetchWithAuth('/auth/logout', {
-            method: 'POST'
-          });
+     logout: async () => {
+  try {
+    set({ isLoading: true, error: null });
+    
+    await fetchWithAuth('/auth/logout', {
+      method: 'POST',
+      credentials: 'include'
+    });
 
-          set({ user: null, error: null });
-          localStorage.removeItem('auth-storage');
-        } catch (error) {
-          console.error('Ошибка при выходе:', error);
-          set({ error: error.message, isLoading: false });
-        } finally {
-          set({ isLoading: false });
-        }
-      },
+    // Очищаем данные пользователя
+    set({ 
+      user: null, 
+      error: null, 
+      isLoading: false 
+    });
+
+    // Очищаем локальное хранилище
+    localStorage.removeItem('auth-storage');
+    
+    // Показываем уведомление об успешном выходе
+    showToast.success('Вы успешно вышли из системы');
+
+    // Опционально: редирект на страницу входа
+    window.location.href = '/login';
+  } catch (error) {
+    console.error('Ошибка при выходе:', error);
+    set({ 
+      error: error.message, 
+      isLoading: false 
+    });
+    showToast.error('Ошибка при выходе: ' + error.message);
+  }
+},
 
       updateProfile: async (userData) => {
         try {
