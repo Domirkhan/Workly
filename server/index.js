@@ -29,11 +29,10 @@ const httpServer = createServer(app);
 // Настройка Socket.IO
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.NODE_ENV === 'production' 
-      ? [process.env.CLIENT_URL]
-      : ['http://localhost:5173'],
+    origin: [process.env.CLIENT_URL],
     methods: ['GET', 'POST'],
-    credentials: true
+    credentials: true,
+     allowEIO3: true
   }
 });
 
@@ -57,9 +56,7 @@ app.use(cookieParser(process.env.JWT_SECRET));
 const allowedOrigins = [
   process.env.CLIENT_URL,
   'https://workly-zd8z.onrender.com',
-  'https://workly-backend.onrender.com',
-  'http://localhost:5173',
-  'http://localhost:5000'
+  'https://workly-backend.onrender.com'
 ];
 
 app.use(cors({

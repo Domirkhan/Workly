@@ -4,11 +4,12 @@ const configureSocket = (server) => {
   const io = new Server(server, {
     cors: {
       origin: [
-        'http://localhost:5173',
-        'https://workly-zd8z.onrender.com'
-      ],
-      methods: ['GET', 'POST'],
-      credentials: true
+      'https://workly-zd8z.onrender.com',
+      'https://workly-backend.onrender.com'
+    ],
+    methods: ['GET', 'POST'],
+    credentials: true,
+    allowEIO3: true
     }
   });
 
