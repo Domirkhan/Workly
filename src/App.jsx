@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import 'react-toastify/dist/ReactToastify.css';
+
 
 // Страницы для публичного доступа
 import LandingPage from './pages/LandingPage';
