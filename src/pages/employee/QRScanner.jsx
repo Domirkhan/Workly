@@ -43,64 +43,88 @@ export default function QRScanner() {
     };
   }, [isScanning, scanType]);
 
-  const handleScan = async (decodedText) => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      console.log('Отсканированный QR-код:', decodedText);
-      
-      const loadingMessage = scanType === 'in' 
-        ? 'Начинаем рабочий день...' 
-        : 'Завершаем рабочий день...';
-      
-      const loadingToast = showToast.loading(loadingMessage);
-
-      if (scanType === 'in') {
-        await api.timesheet.clockIn({ qrCode: decodedText });
-        showToast.success('Рабочий день успешно начат');
-      } else {
-        await api.timesheet.clockOut({ qrCode: decodedText });
-        showToast.success('Рабочий день успешно завершен');
-      }
-      
-      showToast.dismiss(loadingToast);
-      setSuccess(true);
-      
-      // Очищаем сканер
-      if (window.html5QrcodeScanner) {
-        window.html5QrcodeScanner.clear();
-      }
-      
-      // Перенаправляем на табель
-      setTimeout(() => {
-        setSuccess(false);
-        setIsScanning(false);
-        setScanType(null);
-        navigate('/employee/timesheet');
-      }, 2000);
-      
-    } catch (error) {
-      console.error('Ошибка при отправке кода:', error);
-      const errorMessage = error.response?.data?.message || 'Произошла ошибка при сканировании';
-      setError(errorMessage);
-      showToast.error(errorMessage);
-      
-      // Автоматически скрываем ошибку
-      setTimeout(() => {
-        setError(null);
-        setIsScanning(false);
-        setScanType(null);
-      }, 3000);
-      
-      // Очищаем сканер при ошибке
-      if (window.html5QrcodeScanner) {
-        window.html5QrcodeScanner.clear();
-      }
-    } finally {
-      setIsLoading(false);
+const handleScan = async (decodedText) => {
+  try {
+    setIsLoading(true);
+    setError(null);
+    
+    // Проверяем наличие типа сканирования
+    if (!scanType) {
+      throw new Error('Не выбран тип операции');
     }
-  };
+    
+    // Проверяем формат QR-кода
+    if (!decodedText || typeof decodedText !== 'string') {
+      throw new Error('Неверный формат QR-кода');
+    }
+    
+    console.log('Отсканированный QR-код:', decodedText);
+    
+    const loadingToast = showToast.loading(
+      scanType === 'in' ? 'Начинаем рабочий день...' : 'Завершаем рабочий день...'
+    );
+
+    // Отправляем запрос на сервер
+    if (scanType === 'in') {
+      const response = await api.timesheet.clockIn({ qrCode: decodedText });
+      if (response?.error) {
+        throw new Error(response.error);
+      }
+      showToast.success('Рабочий день успешно начат');
+    } else {
+      const response = await api.timesheet.clockOut({ qrCode: decodedText });
+      if (response?.error) {
+        throw new Error(response.error);
+      }
+      showToast.success('Рабочий день успешно завершен');
+    }
+    
+    // Закрываем загрузочное уведомление
+    showToast.dismiss(loadingToast);
+    
+    // Устанавливаем успешное состояние
+    setSuccess(true);
+    
+    // Очищаем сканер
+    if (window.html5QrcodeScanner) {
+      await window.html5QrcodeScanner.clear().catch(console.error);
+    }
+    
+    // Перенаправляем на табель через 2 секунды
+    setTimeout(() => {
+      setSuccess(false);
+      setIsScanning(false);
+      setScanType(null);
+      navigate('/employee/timesheet');
+    }, 2000);
+    
+  } catch (error) {
+    console.error('Ошибка при отправке кода:', error);
+    
+    // Формируем сообщение об ошибке
+    const errorMessage = error.response?.data?.message 
+      || error.message 
+      || 'Произошла ошибка при сканировании';
+    
+    // Устанавливаем ошибку
+    setError(errorMessage);
+    showToast.error(errorMessage);
+    
+    // Автоматически скрываем ошибку через 3 секунды
+    setTimeout(() => {
+      setError(null);
+      setIsScanning(false);
+      setScanType(null);
+    }, 3000);
+    
+    // Очищаем сканер при ошибке
+    if (window.html5QrcodeScanner) {
+      await window.html5QrcodeScanner.clear().catch(console.error);
+    }
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleError = (error) => {
     console.warn('Ошибка сканирования:', error);

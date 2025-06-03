@@ -26,20 +26,22 @@ export default function EmployeeDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!user?.id) return;
+useEffect(() => {
+  const fetchData = async () => {
+    if (!user?.id) return;
 
-      try {
-        setIsLoading(true);
-        setError(null);
-        
-        // Получаем записи и статистику параллельно
-        const [recordsResponse, statsResponse] = await Promise.all([
-          fetchEmployeeRecords(user.id),
-          api.timesheet.getEmployeeStats(user.id)
-        ]);
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // Получаем записи и статистику параллельно
+      const [recordsResponse, statsResponse] = await Promise.all([
+        api.timesheet.getEmployeeTimesheet(user.id),
+        api.timesheet.getEmployeeStats(user.id)
+      ]);
 
+      if (recordsResponse?.data && statsResponse?.data) {
+        // Преобразуем и устанавливаем данные
         setStats({
           totalHours: statsResponse.data.totalHours || 0,
           totalEarnings: statsResponse.data.totalEarnings || 0,
@@ -47,18 +49,23 @@ export default function EmployeeDashboard() {
           attendanceRate: statsResponse.data.attendanceRate || 0
         });
 
+        // Устанавливаем записи
+        setRecords(recordsResponse.data);
         showToast.success('Данные успешно загружены');
-      } catch (err) {
-        console.error('Ошибка загрузки данных:', err);
-        setError(err.response?.data?.message || 'Произошла ошибка при загрузке данных');
-        showToast.error(err.response?.data?.message || 'Произошла ошибка при загрузке данных');
-      } finally {
-        setIsLoading(false);
+      } else {
+        throw new Error('Неверный формат данных');
       }
-    };
-    
-    fetchData();
-  }, [user?.id, fetchEmployeeRecords]);
+    } catch (err) {
+      console.error('Ошибка загрузки данных:', err);
+      setError(err.response?.data?.message || 'Произошла ошибка при загрузке данных');
+      showToast.error(err.response?.data?.message || 'Произошла ошибка при загрузке данных');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  fetchData();
+}, [user?.id]);
 
   // Проверяем текущую отметку
   const today = format(new Date(), 'yyyy-MM-dd');

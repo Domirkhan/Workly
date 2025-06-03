@@ -90,30 +90,28 @@ function App() {
 
         {/* Маршруты сотрудника */}
         <Route path="/employee" element={
-          <ProtectedRoute role="employee">
-            <EmployeeDashboard />
-          </ProtectedRoute>
-        } />
-        <Route path="/employee/timesheet" element={
-          <ProtectedRoute role="employee">
-            <EmployeeTimesheet />
-          </ProtectedRoute>
-        } />
-        <Route path="/employee/scan" element={
-          <ProtectedRoute role="employee">
-            <QRScanner />
-          </ProtectedRoute>
-        } />
-        <Route path="/employee/bonuses" element={
-          <ProtectedRoute role="employee">
-            <BonusHistoryPage />
-          </ProtectedRoute>
-        } />
-        <Route path="/employee/profile" element={
-          <ProtectedRoute role="employee">
-            <Profile />
-          </ProtectedRoute>
-        } />
+    <ProtectedRoute role="employee">
+      <EmployeeDashboard />
+    </ProtectedRoute>
+  } />
+  
+  <Route path="/employee/timesheet" element={
+    <ProtectedRoute role="employee">
+      <EmployeeTimesheet />
+    </ProtectedRoute>
+  } />
+  
+  <Route path="/employee/scan" element={
+    <ProtectedRoute role="employee">
+      <QRScanner />
+    </ProtectedRoute>
+  } />
+  
+  <Route path="/employee/profile" element={
+    <ProtectedRoute role="employee">
+      <Profile />
+    </ProtectedRoute>
+  } />
 
         {/* Редирект с несуществующих маршрутов */}
         <Route path="*" element={

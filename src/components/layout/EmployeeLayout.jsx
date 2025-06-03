@@ -24,10 +24,10 @@ export default function EmployeeLayout({ children }) {
   };
   
   const navigationItems = [
-    { name: 'Главная', path: '/employee', icon: <Home size={20} /> },
-    { name: 'Табель', path: '/employee/timesheet', icon: <ClipboardList size={20} /> },
-    { name: 'Отметка времени', path: '/employee/clock', icon: <Clock size={20} /> },
-    { name: 'Профиль', path: '/employee/profile', icon: <User size={20} /> },
+      { name: 'Главная', path: '/employee', icon: <Home size={20} /> },
+  { name: 'Табель', path: '/employee/timesheet', icon: <ClipboardList size={20} /> },
+  { name: 'QR сканер', path: '/employee/scan', icon: <Clock size={20} /> }, // Изменено с clock на scan
+  { name: 'Профиль', path: '/employee/profile', icon: <User size={20} /> },
   ];
 
   return (

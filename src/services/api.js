@@ -106,20 +106,27 @@ export const employeeApi = {
 
 // Табель учета времени
 export const timesheetApi = {
-  clockIn: (data) =>
-    axiosClient.post('/timesheet/clock-in', data),
-  
-  clockOut: (data) =>
-    axiosClient.post('/timesheet/clock-out', data),
-  
-  getAll: () =>
-    axiosClient.get('/timesheet'),
-  
-  getMonthly: (year, month) =>
-    axiosClient.get('/timesheet/monthly', { params: { year, month } }),
-  
-  getEmployeeTimesheet: (employeeId, params) =>
-    axiosClient.get(`/timesheet/employee/${employeeId}`, { params }),
+  getAll: async () => {
+      const response = await axiosClient.get('/timesheet');
+      return {
+        data: Array.isArray(response.data) ? response.data : []
+      };
+    },
+
+    getEmployeeTimesheet: async (employeeId, params) => {
+      const response = await axiosClient.get(`/timesheet/employee/${employeeId}`, { params });
+      return {
+        data: Array.isArray(response?.records) ? response.records : []
+      };
+    },
+
+    getMonthly: async (year, month) => {
+      const response = await axiosClient.get('/timesheet/monthly', { params: { year, month } });
+      return Array.isArray(response) ? response : [];
+    },
+
+    clockIn: (data) => axiosClient.post('/timesheet/clock-in', data),
+    clockOut: (data) => axiosClient.post('/timesheet/clock-out', data),
   
   getArchiveMonths: () =>
     axiosClient.get('/timesheet/archive-months'),
