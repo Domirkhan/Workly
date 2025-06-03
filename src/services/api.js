@@ -1,147 +1,51 @@
-const BASE_URL = process.env.NODE_ENV === 'production'
-  ? 'https://workly-backend.onrender.com/api/v1'
-  : '/api/v1';
+import axiosClient from './axiosClient';
 
-async function fetchWithAuth(endpoint, options = {}) {
-  try {
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        ...options.headers,
-      },
-      credentials: 'include',
-      mode: 'cors'
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Произошла ошибка');
-    }
-
-    const text = await response.text();
-    return text ? JSON.parse(text) : {};
-  } catch (error) {
-    console.error('API Error:', error);
-    throw error;
-  }
-}
 // Аутентификация
 export const authApi = {
   register: (userData) => 
-    fetchWithAuth('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(userData),
-    }),
+    axiosClient.post('/auth/register', userData),
   login: (credentials) =>
-    fetchWithAuth('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(credentials),
-    }),
+    axiosClient.post('/auth/login', credentials),
   logout: () =>
-    fetchWithAuth('/auth/logout', {
-      method: 'POST',
-    }),
+    axiosClient.post('/auth/logout'),
   getMe: () => 
-    fetchWithAuth('/auth/me')
+    axiosClient.get('/auth/me')
 };
 
 // Сотрудники
 export const employeeApi = {
   getAll: () => 
-    fetchWithAuth('/employees'),
+    axiosClient.get('/employees'),
   getById: (id) => 
-    fetchWithAuth(`/employees/${id}`),
+    axiosClient.get(`/employees/${id}`),
   create: (data) => 
-    fetchWithAuth('/employees', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    }),
+    axiosClient.post('/employees', data),
   update: (id, data) => 
-    fetchWithAuth(`/employees/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    }),
+    axiosClient.put(`/employees/${id}`, data),
   delete: (id) => 
-    fetchWithAuth(`/employees/${id}`, {
-      method: 'DELETE'
-    }),
+    axiosClient.delete(`/employees/${id}`),
   updateStatus: (id, status) => 
-    fetchWithAuth(`/employees/${id}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status })
-    })
+    axiosClient.patch(`/employees/${id}/status`, { status })
 };
 
 // Табель учета времени
 export const timesheetApi = {
   clockIn: (data) =>
-    fetchWithAuth('/timesheet/clock-in', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    }),
+    axiosClient.post('/timesheet/clock-in', data),
   clockOut: (data) =>
-    fetchWithAuth('/timesheet/clock-out', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    }),
+    axiosClient.post('/timesheet/clock-out', data),
   getAll: () =>
-    fetchWithAuth('/timesheet'),
+    axiosClient.get('/timesheet'),
   getMonthly: (year, month) =>
-    fetchWithAuth(`/timesheet/monthly?year=${year}&month=${month}`),
-  getEmployeeTimesheet: (employeeId, params = {}) =>
-    fetchWithAuth(`/timesheet/employee/${employeeId}${params ? `?${new URLSearchParams(params)}` : ''}`)
+    axiosClient.get(`/timesheet/monthly?year=${year}&month=${month}`)
 };
 
-// Компания
+// Компания 
 export const companyApi = {
-  generateInviteCode: () =>
-    fetchWithAuth('/company/invite-code', {
-      method: 'POST'
-    }),
   generateQrCode: () =>
-    fetchWithAuth('/company/qr-code', {
-      method: 'POST'
-    }),
+    axiosClient.post('/company/qr-code'),
   getSettings: () =>
-    fetchWithAuth('/company/settings'),
+    axiosClient.get('/company/settings'),
   updateSettings: (data) =>
-    fetchWithAuth('/company/settings', {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    })
+    axiosClient.put('/company/settings', data)
 };
-
-// Бонусы
-export const bonusApi = {
-  createBonus: (data) =>
-    fetchWithAuth('/bonuses', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    }),
-  getEmployeeBonuses: (employeeId) =>
-    fetchWithAuth(`/bonuses/employee/${employeeId}`),
-  getAll: () =>
-    fetchWithAuth('/bonuses'),
-  update: (id, data) =>
-    fetchWithAuth(`/bonuses/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    }),
-  delete: (id) =>
-    fetchWithAuth(`/bonuses/${id}`, {
-      method: 'DELETE'
-    })
-};
-
-// Единый объект API
-export const api = {
-  auth: authApi,
-  employees: employeeApi,
-  timesheet: timesheetApi,
-  company: companyApi,
-  bonus: bonusApi
-};
-
-export default api;
