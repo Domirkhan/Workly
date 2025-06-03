@@ -5,7 +5,7 @@ import { TOAST_MESSAGES } from '../../server/constants/toastMessages';
 
 // Создаем инстанс axios с базовой конфигурацией
 const axiosClient = axios.create({
-  baseURL: process.env.NODE_ENV === 'production'
+  baseURL: process.env.NODE_ENV === 'production' 
     ? 'https://workly-backend.onrender.com/api/v1'
     : '/api/v1',
   headers: {
@@ -18,16 +18,13 @@ const axiosClient = axios.create({
 // Перехватчик запросов
 axiosClient.interceptors.request.use(
   (config) => {
-    // Добавляем загрузочное уведомление для POST, PUT, DELETE запросов
     if (['post', 'put', 'delete'].includes(config.method)) {
-      toast.loading('Загрузка...', {
-        id: config.url
-      });
+      showToast.loading('Загрузка...');
     }
     return config;
   },
   (error) => {
-    console.error('Request Error:', error);
+    showToast.error('Ошибка при отправке запроса');
     return Promise.reject(error);
   }
 );
@@ -35,20 +32,35 @@ axiosClient.interceptors.request.use(
 // Перехватчик ответов
 axiosClient.interceptors.response.use(
   (response) => {
-    // Закрываем загрузочное уведомление и показываем успех
-    if (['post', 'put', 'delete'].includes(response.config.method)) {
-      toast.dismiss(response.config.url);
-      toast.success('Операция выполнена успешно');
+    // Проверяем наличие данных
+    if (!response.data) {
+      throw new Error('Нет данных в ответе');
     }
+    
+    // Для методов, которые изменяют данные
+    if (['post', 'put', 'delete'].includes(response.config.method)) {
+      showToast.dismiss();
+      showToast.success('Операция выполнена успешно');
+    }
+    
     return response.data;
   },
   (error) => {
-    // Закрываем загрузочное уведомление и показываем ошибку
-    if (error.config) {
-      toast.dismiss(error.config.url);
+    showToast.dismiss();
+    
+    // Обработка различных типов ошибок
+    if (error.response) {
+      // Ошибка от сервера
+      const message = error.response.data?.message || 'Ошибка сервера';
+      showToast.error(message);
+    } else if (error.request) {
+      // Нет ответа от сервера
+      showToast.error('Нет ответа от сервера');
+    } else {
+      // Ошибка при настройке запроса
+      showToast.error('Ошибка при выполнении запроса');
     }
-    const message = error.response?.data?.message || TOAST_MESSAGES.ERROR.DEFAULT;
-    toast.error(message);
+    
     return Promise.reject(error);
   }
 );
