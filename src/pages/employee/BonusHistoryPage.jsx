@@ -20,21 +20,46 @@ export default function BonusHistoryPage() {
       try {
         setIsLoading(true);
         setError(null);
-        const { data } = await api.bonuses.getEmployeeBonuses(user.id);
-        setBonuses(data);
-        showToast.success('История начислений загружена');
+
+        const response = await api.bonus.getEmployeeBonuses();
+        
+        // Проверяем ответ и добавляем значение по умолчанию
+        const bonusesData = response || [];
+
+        // Преобразуем и сортируем данные
+        const formattedBonuses = Array.isArray(bonusesData) 
+          ? bonusesData
+              .filter(bonus => bonus && bonus.amount) 
+              .map(bonus => ({
+                ...bonus,
+                amount: Number(bonus.amount),
+                date: new Date(bonus.date),
+                createdBy: {
+                  name: bonus.createdBy?.name || 'Система'
+                }
+              }))
+              .sort((a, b) => b.date - a.date)
+          : [];
+
+        setBonuses(formattedBonuses);
+
+        if (formattedBonuses.length > 0) {
+          showToast.success('История начислений загружена');
+        }
+
       } catch (error) {
         console.error('Ошибка при загрузке премий/штрафов:', error);
-        setError(error.response?.data?.message || 'Ошибка при загрузке данных');
-        showToast.error(error.response?.data?.message || 'Ошибка при загрузке данных');
+        const errorMessage = error.response?.data?.message || 
+                           error.message || 
+                           'Ошибка при загрузке данных';
+        setError(errorMessage);
+        showToast.error(errorMessage);
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (user?.id) {
-      fetchBonuses();
-    }
+    fetchBonuses();
   }, [user?.id]);
   
   // Вычисляем общую сумму премий и штрафов
