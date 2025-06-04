@@ -32,59 +32,52 @@ axiosClient.interceptors.request.use(
   }
 );
 
-
 // Перехватчик ответов
 axiosClient.interceptors.response.use(
   (response) => {
     // Очищаем все текущие уведомления
     showToast.dismiss();
 
-    // Проверяем наличие ответа
-    if (!response) {
+    // Проверяем наличие данных в ответе
+    if (!response || !response.data) {
       throw new Error(TOAST_MESSAGES.ERROR.NO_DATA);
-    }
-
-    // Проверяем и преобразуем данные
-    let data = response.data;
-    if (!data && response.status !== 204) {
-      data = Array.isArray(response.config?.params) ? [] : {};
     }
 
     // Для методов изменяющих данные показываем уведомление об успехе
     if (['post', 'put', 'delete', 'patch'].includes(response.config.method)) {
-      const successMessage = data?.message || TOAST_MESSAGES.SUCCESS.DEFAULT;
-      showToast.success(successMessage);
+      // Если есть специальное сообщение от сервера - показываем его
+      if (response.data?.message) {
+        showToast.success(response.data.message);
+      } else {
+        // Иначе показываем стандартное сообщение
+        showToast.success(TOAST_MESSAGES.SUCCESS.DEFAULT);
+      }
     }
 
     // Если в ответе есть токен - сохраняем его
-    if (data?.token) {
-      localStorage.setItem('token', data.token);
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
     }
 
-    // Возвращаем данные
-    return data;
+    // Возвращаем данные из ответа
+    return response.data;
   },
   (error) => {
     // Очищаем все текущие уведомления
     showToast.dismiss();
 
-    // Логируем ошибку
-    console.error('API Error:', {
-      url: error.config?.url,
-      method: error.config?.method,
-      status: error.response?.status,
-      error: error.message
-    });
-
     // Обработка ошибки авторизации
     if (error.response?.status === 401) {
+      // Очищаем токен
       localStorage.removeItem('token');
       localStorage.removeItem('auth-storage');
+      
+      // Перенаправляем на страницу входа
       window.location.href = '/login';
       return Promise.reject(error);
     }
 
-    // Обработка истекшей сессии
+    // Обработка ошибки истекшей сессии
     if (error.response?.status === 403) {
       localStorage.removeItem('token');
       localStorage.removeItem('auth-storage');
@@ -92,7 +85,7 @@ axiosClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // Определяем текст ошибки
+    // Формируем сообщение об ошибке
     const errorMessage = 
       error.response?.data?.message || // Сообщение от сервера
       error.message || // Сообщение из ошибки
@@ -101,10 +94,19 @@ axiosClient.interceptors.response.use(
     // Показываем уведомление об ошибке
     showToast.error(errorMessage);
 
-    // Для сетевых ошибок
+    // Если это сетевая ошибка
     if (!error.response) {
+      console.error('Ошибка сети:', error);
       showToast.error(TOAST_MESSAGES.ERROR.NETWORK);
     }
+
+    // Логируем ошибку
+    console.error('API Error:', {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      message: errorMessage
+    });
 
     return Promise.reject(error);
   }
