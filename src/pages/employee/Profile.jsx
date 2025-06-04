@@ -82,7 +82,7 @@ export default function Profile() {
           {/* Передаем ID пользователя в компонент BonusHistory */}
           <div className="mt-6">
             <Link 
-              to="/bonus-history"
+              to="/employee/bonus-history"
               className="text-blue-600 hover:text-blue-700 flex items-center justify-center"
             >
               <span>Посмотреть полную историю премий и штрафов</span>

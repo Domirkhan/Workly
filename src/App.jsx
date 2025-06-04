@@ -112,6 +112,14 @@ function App() {
       <Profile />
     </ProtectedRoute>
   } />
+  <Route
+        path="/employee/bonus-history"
+        element={
+          <ProtectedRoute role="employee">
+            <BonusHistoryPage />
+          </ProtectedRoute>
+        }
+      />
 
         {/* Редирект с несуществующих маршрутов */}
         <Route path="*" element={
