@@ -4,43 +4,13 @@ import { TOAST_MESSAGES } from '../../server/constants/toastMessages';
 
 // Создаем инстанс axios с базовой конфигурацией 
 const axiosClient = axios.create({
-  baseURL: process.env.NODE_ENV === 'production'
-    ? 'https://workly-backend.onrender.com/api/v1'
-    : 'http://localhost:5000/api/v1',
+  baseURL: 'https://workly-backend.onrender.com/api/v1',
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   },
   withCredentials: true,
-  timeout: 30000,
-  retry: 3,
-  retryDelay: (retryCount) => retryCount * 1000
-});
-
-// Перехватчик для повторных попыток
-axiosClient.interceptors.response.use(null, async (error) => {
-  const { config } = error;
-  
-  if (!config || !config.retry) {
-    return Promise.reject(error);
-  }
-
-  config._retryCount = config._retryCount || 0;
-
-  if (config._retryCount >= config.retry) {
-    return Promise.reject(error);
-  }
-
-  config._retryCount += 1;
-
-  const delayPromise = new Promise(resolve => {
-    setTimeout(resolve, config.retryDelay(config._retryCount));
-  });
-
-  await delayPromise;
-
-  showToast.loading(`Повторная попытка ${config._retryCount}/${config.retry}...`);
-  return axiosClient(config);
+  timeout: 60000 // Увеличиваем таймаут до 60 секунд
 });
 
 // Перехватчик запросов
@@ -88,7 +58,6 @@ axiosClient.interceptors.response.use(
   (error) => {
     showToast.dismiss();
 
-    // Обработка ошибок аутентификации
     if ([401, 403].includes(error.response?.status)) {
       localStorage.removeItem('token');
       localStorage.removeItem('auth-storage');
