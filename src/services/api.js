@@ -10,7 +10,13 @@ const axiosClient = axios.create({
     'Accept': 'application/json'
   },
   withCredentials: true,
-  timeout: 10000
+  timeout: 10000,
+  // Добавляем специальные настройки для CORS
+  xsrfCookieName: 'XSRF-TOKEN',
+  xsrfHeaderName: 'X-XSRF-TOKEN',
+  validateStatus: function (status) {
+    return status >= 200 && status < 500;
+  }
 });
 
 // Перехватчик запросов
@@ -80,11 +86,14 @@ axiosClient.interceptors.response.use(
       error: error.message
     });
 
-    // Обрабатываем различные статусы ошибок
-    if (error.response?.status === 404) {
-      return Promise.resolve([]);
+    // Обработка CORS ошибок
+    if (error.message === 'Network Error' || error.message.includes('CORS')) {
+      console.error('CORS Error:', error);
+      showToast.error('Ошибка доступа к серверу. Пожалуйста, попробуйте позже.');
+      return Promise.reject(new Error('CORS Error'));
     }
 
+    // Обработка ошибок аутентификации
     if (error.response?.status === 401 || error.response?.status === 403) {
       localStorage.removeItem('token');
       localStorage.removeItem('auth-storage');
@@ -92,17 +101,44 @@ axiosClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // Для сетевых ошибок
+    // Обработка 404 ошибок
+    if (error.response?.status === 404) {
+      console.warn('Resource not found:', error.config?.url);
+      return Promise.resolve([]);
+    }
+
+    // Обработка ошибок валидации (400)
+    if (error.response?.status === 400) {
+      const message = error.response.data?.message || 'Ошибка валидации данных';
+      showToast.error(message);
+      return Promise.reject(error);
+    }
+
+    // Обработка сетевых ошибок
     if (!error.response) {
       showToast.error(TOAST_MESSAGES.ERROR.NETWORK);
       return Promise.resolve([]);
     }
 
-    // Показываем ошибку пользователю
+    // Обработка серверных ошибок (500+)
+    if (error.response?.status >= 500) {
+      showToast.error('Ошибка сервера. Пожалуйста, попробуйте позже.');
+      return Promise.reject(error);
+    }
+
+    // Показываем общую ошибку пользователю
     const errorMessage = error.response?.data?.message || 
                         error.message || 
                         TOAST_MESSAGES.ERROR.DEFAULT;
     showToast.error(errorMessage);
+
+    // Логируем детали ошибки
+    console.error('Request failed:', {
+      config: error.config,
+      status: error.response?.status,
+      data: error.response?.data,
+      headers: error.response?.headers
+    });
 
     return Promise.reject(error);
   }

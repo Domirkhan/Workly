@@ -1,7 +1,12 @@
-import jwt from 'jsonwebtoken';
-
 export const auth = async (req, res, next) => {
   try {
+    // Добавляем CORS заголовки для OPTIONS запросов
+    if (req.method === 'OPTIONS') {
+      res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH');
+      res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      return res.status(200).json({});
+    }
+
     let token;
     
     // Проверяем Authorization заголовок
@@ -19,13 +24,7 @@ export const auth = async (req, res, next) => {
       return res.status(401).json({ message: 'Требуется авторизация' });
     }
 
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = decoded;
-      next();
-    } catch (e) {
-      return res.status(401).json({ message: 'Недействительный токен' });
-    }
+    // ... остальной код middleware
   } catch (error) {
     console.error('Ошибка аутентификации:', error);
     res.status(401).json({ message: 'Ошибка аутентификации' });

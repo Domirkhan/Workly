@@ -23,11 +23,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 // CORS настройки
-const allowedOrigins = [
-  'https://workly-zd8z.onrender.com',
-  'https://workly-backend.onrender.com',
-  'https://workly-h3jj.onrender.com'
-];
+const allowedOrigins = ['https://workly-zd8z.onrender.com'];
 
 // Инициализация приложения
 const app = express();
@@ -39,12 +35,12 @@ const io = new Server(httpServer, {
     origin: allowedOrigins,
     methods: ['GET', 'POST'],
     credentials: true,
-    allowEIO3: true, // Добавляем поддержку старых версий
-    transports: ['websocket', 'polling'] // Добавляем polling как fallback
+    allowEIO3: true,
+    transports: ['websocket', 'polling']
   },
-  path: '/socket.io/', // Явно указываем путь
-  pingInterval: 10000, // Уменьшаем интервал пинга
-  pingTimeout: 5000,   // Уменьшаем таймаут
+  path: '/socket.io/',
+  pingInterval: 10000,
+  pingTimeout: 5000,
   cookie: {
     name: 'io',
     httpOnly: true,
@@ -136,7 +132,6 @@ const gracefulShutdown = () => {
     });
   });
 
-  // Принудительное закрытие через 10 секунд
   setTimeout(() => {
     console.error('⚠️ Принудительное закрытие'.red);
     process.exit(1);
