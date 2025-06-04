@@ -10,13 +10,9 @@ const axiosClient = axios.create({
     'Accept': 'application/json'
   },
   withCredentials: true,
-  timeout: 10000,
-  // Добавляем специальные настройки для CORS
-  xsrfCookieName: 'XSRF-TOKEN',
-  xsrfHeaderName: 'X-XSRF-TOKEN',
-  validateStatus: function (status) {
-    return status >= 200 && status < 500;
-  }
+  timeout: 30000, // Увеличиваем таймаут до 30 секунд
+  maxRetries: 3, // Максимальное количество повторных попыток
+  retryDelay: 1000, // Задержка перед повторной попыткой
 });
 
 // Перехватчик запросов
@@ -38,44 +34,33 @@ axiosClient.interceptors.request.use(
   }
 );
 
-
 // Перехватчик ответов
 axiosClient.interceptors.response.use(
   (response) => {
-    // Очищаем уведомления
     showToast.dismiss();
 
-    // Проверяем и получаем данные
-    const data = response?.data;
-
-    // Если нет данных, возвращаем пустой массив/объект
-    if (!data && response?.status !== 204) {
-      console.warn('Нет данных в ответе');
+    // Проверяем наличие ответа
+    if (!response || !response.data) {
+      console.warn('Пустой ответ от сервера');
       return Array.isArray(response?.config?.params) ? [] : {};
     }
 
-    // Обрабатываем успешные запросы изменения данных
-    if (['post', 'put', 'delete', 'patch'].includes(response?.config?.method)) {
+    const data = response.data;
+
+    // Для методов изменения данных
+    if (['post', 'put', 'delete', 'patch'].includes(response.config?.method)) {
       const successMessage = data?.message || TOAST_MESSAGES.SUCCESS.DEFAULT;
       showToast.success(successMessage);
     }
 
-    // Сохраняем токен если есть
+    // Сохраняем токен
     if (data?.token) {
       localStorage.setItem('token', data.token);
     }
 
-    // Преобразуем данные перед возвратом
-    if (Array.isArray(data)) {
-      return data;
-    } else if (typeof data === 'object') {
-      return data;
-    } else {
-      return {};
-    }
+    return data;
   },
   (error) => {
-    // Очищаем уведомления
     showToast.dismiss();
 
     // Логируем ошибку
@@ -86,14 +71,20 @@ axiosClient.interceptors.response.use(
       error: error.message
     });
 
-    // Обработка CORS ошибок
-    if (error.message === 'Network Error' || error.message.includes('CORS')) {
-      console.error('CORS Error:', error);
-      showToast.error('Ошибка доступа к серверу. Пожалуйста, попробуйте позже.');
-      return Promise.reject(new Error('CORS Error'));
+    // Обработка таймаута
+    if (error.code === 'ECONNABORTED') {
+      console.warn('Request timeout:', error.config?.url);
+      showToast.error('Превышено время ожидания ответа от сервера');
+      return Promise.resolve([]);
     }
 
-    // Обработка ошибок аутентификации
+    // Обработка CORS ошибок
+    if (error.message === 'Network Error') {
+      showToast.error('Ошибка соединения с сервером');
+      return Promise.resolve([]);
+    }
+
+    // Обработка 401/403 ошибок
     if (error.response?.status === 401 || error.response?.status === 403) {
       localStorage.removeItem('token');
       localStorage.removeItem('auth-storage');
@@ -103,44 +94,16 @@ axiosClient.interceptors.response.use(
 
     // Обработка 404 ошибок
     if (error.response?.status === 404) {
-      console.warn('Resource not found:', error.config?.url);
       return Promise.resolve([]);
     }
 
-    // Обработка ошибок валидации (400)
-    if (error.response?.status === 400) {
-      const message = error.response.data?.message || 'Ошибка валидации данных';
-      showToast.error(message);
-      return Promise.reject(error);
-    }
-
-    // Обработка сетевых ошибок
-    if (!error.response) {
-      showToast.error(TOAST_MESSAGES.ERROR.NETWORK);
-      return Promise.resolve([]);
-    }
-
-    // Обработка серверных ошибок (500+)
-    if (error.response?.status >= 500) {
-      showToast.error('Ошибка сервера. Пожалуйста, попробуйте позже.');
-      return Promise.reject(error);
-    }
-
-    // Показываем общую ошибку пользователю
+    // Показываем ошибку пользователю
     const errorMessage = error.response?.data?.message || 
                         error.message || 
                         TOAST_MESSAGES.ERROR.DEFAULT;
     showToast.error(errorMessage);
 
-    // Логируем детали ошибки
-    console.error('Request failed:', {
-      config: error.config,
-      status: error.response?.status,
-      data: error.response?.data,
-      headers: error.response?.headers
-    });
-
-    return Promise.reject(error);
+    return Promise.resolve([]);
   }
 );
 
@@ -190,11 +153,11 @@ export const companyApi = {
 
 // API для работы с бонусами
 export const bonusApi = {
-getEmployeeBonuses: () => axiosClient.get('/bonuses/employee/me'),
-    create: (data) => axiosClient.post('/bonuses', data),
-    getAll: () => axiosClient.get('/bonuses'),
-    update: (id, data) => axiosClient.put(`/bonuses/${id}`, data),
-    delete: (id) => axiosClient.delete(`/bonuses/${id}`)
+  getEmployeeBonuses: () => axiosClient.get('/bonuses/employee/me'),
+  create: (data) => axiosClient.post('/bonuses', data),
+  getAll: () => axiosClient.get('/bonuses'),
+  update: (id, data) => axiosClient.put(`/bonuses/${id}`, data),
+  delete: (id) => axiosClient.delete(`/bonuses/${id}`)
 };
 
 // Единый объект API
