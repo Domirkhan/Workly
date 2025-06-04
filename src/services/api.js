@@ -10,7 +10,7 @@ const axiosClient = axios.create({
     'Accept': 'application/json'
   },
   withCredentials: true,
-  timeout: 60000 // Увеличиваем таймаут до 60 секунд
+  timeout: 5000 
 });
 
 // Перехватчик запросов
