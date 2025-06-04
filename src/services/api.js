@@ -10,7 +10,7 @@ const axiosClient = axios.create({
     'Accept': 'application/json'
   },
   withCredentials: true,
-  timeout: 5000 
+  
 });
 
 // Перехватчик запросов
