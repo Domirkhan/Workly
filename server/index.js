@@ -38,9 +38,13 @@ const io = new Server(httpServer, {
   cors: {
     origin: allowedOrigins,
     methods: ['GET', 'POST'],
-    credentials: true
+    credentials: true,
+    allowEIO3: true, // Добавляем поддержку старых версий
+    transports: ['websocket', 'polling'] // Добавляем polling как fallback
   },
-  pingTimeout: 60000,
+  path: '/socket.io/', // Явно указываем путь
+  pingInterval: 10000, // Уменьшаем интервал пинга
+  pingTimeout: 5000,   // Уменьшаем таймаут
   cookie: {
     name: 'io',
     httpOnly: true,
