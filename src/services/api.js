@@ -36,45 +36,40 @@ axiosClient.interceptors.request.use(
 // Перехватчик ответов
 axiosClient.interceptors.response.use(
   (response) => {
-    // Очищаем все текущие уведомления
+    // Очищаем уведомления
     showToast.dismiss();
 
-    // Проверяем наличие ответа
-    if (!response) {
-      console.error('Пустой ответ от сервера');
-      return [];
+    // Проверяем и получаем данные
+    const data = response?.data;
+
+    // Если нет данных, возвращаем пустой массив/объект
+    if (!data && response?.status !== 204) {
+      console.warn('Нет данных в ответе');
+      return Array.isArray(response?.config?.params) ? [] : {};
     }
 
-    // Проверяем и преобразуем данные
-    let data = response.data;
-    
-    // Если данных нет и это не 204 статус
-    if (!data && response.status !== 204) {
-      console.warn('Нет данных в ответе, возвращаем пустой массив/объект');
-      return Array.isArray(response.config?.params) ? [] : {};
-    }
-
-    // Если ответ - это массив, но пустой
-    if (Array.isArray(data) && data.length === 0) {
-      return [];
-    }
-
-    // Для методов изменяющих данные показываем уведомление об успехе
-    if (['post', 'put', 'delete', 'patch'].includes(response.config.method)) {
+    // Обрабатываем успешные запросы изменения данных
+    if (['post', 'put', 'delete', 'patch'].includes(response?.config?.method)) {
       const successMessage = data?.message || TOAST_MESSAGES.SUCCESS.DEFAULT;
       showToast.success(successMessage);
     }
 
-    // Если в ответе есть токен - сохраняем его
+    // Сохраняем токен если есть
     if (data?.token) {
       localStorage.setItem('token', data.token);
     }
 
-    // Возвращаем данные с проверкой
-    return data || [];
+    // Преобразуем данные перед возвратом
+    if (Array.isArray(data)) {
+      return data;
+    } else if (typeof data === 'object') {
+      return data;
+    } else {
+      return {};
+    }
   },
   (error) => {
-    // Очищаем все текущие уведомления
+    // Очищаем уведомления
     showToast.dismiss();
 
     // Логируем ошибку
@@ -85,41 +80,28 @@ axiosClient.interceptors.response.use(
       error: error.message
     });
 
-    // Обработка 404 ошибки
+    // Обрабатываем различные статусы ошибок
     if (error.response?.status === 404) {
-      console.warn('Ресурс не найден:', error.config?.url);
       return Promise.resolve([]);
     }
 
-    // Обработка ошибки авторизации
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 || error.response?.status === 403) {
       localStorage.removeItem('token');
       localStorage.removeItem('auth-storage');
       window.location.href = '/login';
       return Promise.reject(error);
     }
 
-    // Обработка истекшей сессии
-    if (error.response?.status === 403) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('auth-storage');
-      window.location.href = '/login';
-      return Promise.reject(error);
-    }
-
-    // Для сетевых ошибок возвращаем пустой массив
+    // Для сетевых ошибок
     if (!error.response) {
       showToast.error(TOAST_MESSAGES.ERROR.NETWORK);
       return Promise.resolve([]);
     }
 
-    // Определяем текст ошибки
-    const errorMessage = 
-      error.response?.data?.message || 
-      error.message || 
-      TOAST_MESSAGES.ERROR.DEFAULT;
-
-    // Показываем уведомление об ошибке
+    // Показываем ошибку пользователю
+    const errorMessage = error.response?.data?.message || 
+                        error.message || 
+                        TOAST_MESSAGES.ERROR.DEFAULT;
     showToast.error(errorMessage);
 
     return Promise.reject(error);
