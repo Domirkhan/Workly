@@ -73,46 +73,66 @@ export const useAuthStore = create(
 },
 
       login: async (credentials) => {
-        try {
-          set({ isLoading: true, error: null });
-          
-          const response = await api.auth.login(credentials);
-          const { user, token } = response.data;
+  try {
+    set({ isLoading: true, error: null });
+    
+    const response = await api.auth.login(credentials);
+    
+    // Проверяем наличие ответа
+    if (!response) {
+      throw new Error('Нет ответа от сервера');
+    }
 
-          if (!token || !user) {
-            throw new Error('Неверный ответ сервера');
-          }
+    // Извлекаем данные из ответа
+    const { token, user } = response;
 
-          localStorage.setItem('token', token);
+    // Проверяем наличие обязательных данных
+    if (!token || !user || !user.id) {
+      throw new Error('Неверный формат ответа от сервера');
+    }
 
-          set({ 
-            user: {
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              role: user.role,
-              companyId: user.companyId,
-              position: user.position || 'Не указана',
-              hourlyRate: user.hourlyRate || 0,
-              status: user.status || 'inactive',
-              joinDate: user.joinDate
-            },
-            isLoading: false 
-          });
+    // Сохраняем токен
+    localStorage.setItem('token', token);
 
-          toast.success(TOAST_MESSAGES.SUCCESS.LOGIN);
-          return { user, token };
-
-        } catch (error) {
-          set({ 
-            user: null, 
-            isLoading: false, 
-            error: error.response?.data?.message || error.message 
-          });
-          toast.error(error.response?.data?.message || TOAST_MESSAGES.ERROR.LOGIN);
-          throw error;
-        }
+    // Обновляем состояние с проверкой полей
+    set({ 
+      user: {
+        id: user.id,
+        name: user.name || 'Без имени',
+        email: user.email,
+        role: user.role || 'employee',
+        companyId: user.companyId,
+        position: user.position || 'Не указана',
+        hourlyRate: user.hourlyRate || 0,
+        status: user.status || 'inactive',
+        joinDate: user.joinDate || new Date()
       },
+      isLoading: false,
+      error: null
+    });
+
+    // Показываем уведомление об успехе
+    toast.success(TOAST_MESSAGES.SUCCESS.LOGIN);
+
+    return { user, token };
+
+  } catch (error) {
+    // Очищаем данные при ошибке
+    localStorage.removeItem('token');
+    localStorage.removeItem('auth-storage');
+    
+    set({ 
+      user: null, 
+      isLoading: false, 
+      error: error.message || 'Ошибка при входе'
+    });
+
+    // Показываем ошибку
+    toast.error(error.message || TOAST_MESSAGES.ERROR.LOGIN);
+    
+    throw error;
+  }
+},
 
       register: async (userData) => {
         try {
