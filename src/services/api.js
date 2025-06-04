@@ -41,13 +41,22 @@ axiosClient.interceptors.response.use(
 
     // Проверяем наличие ответа
     if (!response) {
-      throw new Error(TOAST_MESSAGES.ERROR.NO_DATA);
+      console.error('Пустой ответ от сервера');
+      return [];
     }
 
     // Проверяем и преобразуем данные
     let data = response.data;
+    
+    // Если данных нет и это не 204 статус
     if (!data && response.status !== 204) {
-      data = Array.isArray(response.config?.params) ? [] : {};
+      console.warn('Нет данных в ответе, возвращаем пустой массив/объект');
+      return Array.isArray(response.config?.params) ? [] : {};
+    }
+
+    // Если ответ - это массив, но пустой
+    if (Array.isArray(data) && data.length === 0) {
+      return [];
     }
 
     // Для методов изменяющих данные показываем уведомление об успехе
@@ -61,8 +70,8 @@ axiosClient.interceptors.response.use(
       localStorage.setItem('token', data.token);
     }
 
-    // Возвращаем данные
-    return data;
+    // Возвращаем данные с проверкой
+    return data || [];
   },
   (error) => {
     // Очищаем все текущие уведомления
@@ -75,6 +84,12 @@ axiosClient.interceptors.response.use(
       status: error.response?.status,
       error: error.message
     });
+
+    // Обработка 404 ошибки
+    if (error.response?.status === 404) {
+      console.warn('Ресурс не найден:', error.config?.url);
+      return Promise.resolve([]);
+    }
 
     // Обработка ошибки авторизации
     if (error.response?.status === 401) {
@@ -92,19 +107,20 @@ axiosClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    // Для сетевых ошибок возвращаем пустой массив
+    if (!error.response) {
+      showToast.error(TOAST_MESSAGES.ERROR.NETWORK);
+      return Promise.resolve([]);
+    }
+
     // Определяем текст ошибки
     const errorMessage = 
-      error.response?.data?.message || // Сообщение от сервера
-      error.message || // Сообщение из ошибки
-      TOAST_MESSAGES.ERROR.DEFAULT; // Стандартное сообщение
+      error.response?.data?.message || 
+      error.message || 
+      TOAST_MESSAGES.ERROR.DEFAULT;
 
     // Показываем уведомление об ошибке
     showToast.error(errorMessage);
-
-    // Для сетевых ошибок
-    if (!error.response) {
-      showToast.error(TOAST_MESSAGES.ERROR.NETWORK);
-    }
 
     return Promise.reject(error);
   }
