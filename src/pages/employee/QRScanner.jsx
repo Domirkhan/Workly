@@ -7,6 +7,7 @@ import { api } from '../../services/api';
 import EmployeeLayout from '../../components/layout/EmployeeLayout';
 import { useNavigate } from 'react-router-dom';
 import { showToast } from '../../utils/toast';
+import { useSocket } from '../../hooks/useSocket';
 
 export default function QRScanner() {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ export default function QRScanner() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { emitClockEvent } = useSocket();
 
   useEffect(() => {
     let scanner;
@@ -70,12 +72,18 @@ const handleScan = async (decodedText) => {
       if (response?.error) {
         throw new Error(response.error);
       }
+      
+      // Отправляем событие через Socket.IO
+      emitClockEvent('in', new Date());
       showToast.success('Рабочий день успешно начат');
     } else {
       const response = await api.timesheet.clockOut({ qrCode: decodedText });
       if (response?.error) {
         throw new Error(response.error);
       }
+      
+      // Отправляем событие через Socket.IO
+      emitClockEvent('out', new Date());
       showToast.success('Рабочий день успешно завершен');
     }
     

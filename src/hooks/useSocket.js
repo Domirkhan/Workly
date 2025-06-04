@@ -2,9 +2,7 @@ import { useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { useAuthStore } from '../stores/authStore';
 
-const SOCKET_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://workly-backend.onrender.com'
-  : 'http://localhost:5000';
+const SOCKET_URL = 'https://workly-backend.onrender.com';
 
 export const useSocket = () => {
   const socketRef = useRef(null);
@@ -14,7 +12,10 @@ export const useSocket = () => {
     if (!user?.companyId) return;
 
     socketRef.current = io(SOCKET_URL, {
-      withCredentials: true
+      withCredentials: true,
+      auth: {
+        token: localStorage.getItem('token')
+      }
     });
 
     // Подключаемся к комнате компании

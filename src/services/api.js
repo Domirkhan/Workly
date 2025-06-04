@@ -5,9 +5,7 @@ import { TOAST_MESSAGES } from '../../server/constants/toastMessages';
 
 // Создаем инстанс axios с базовой конфигурацией
 const axiosClient = axios.create({
-  baseURL: process.env.NODE_ENV === 'production' 
-    ? 'https://workly-backend.onrender.com/api/v1'
-    : '/api/v1',
+  baseURL: 'https://workly-backend.onrender.com/api/v1',
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
