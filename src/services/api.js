@@ -2,15 +2,45 @@ import axios from 'axios';
 import { showToast } from '../utils/toast';
 import { TOAST_MESSAGES } from '../../server/constants/toastMessages';
 
-// Создаем инстанс axios с базовой конфигурацией
+// Создаем инстанс axios с базовой конфигурацией 
 const axiosClient = axios.create({
-  baseURL: 'https://workly-backend.onrender.com/api/v1',
+  baseURL: process.env.NODE_ENV === 'production'
+    ? 'https://workly-backend.onrender.com/api/v1'
+    : 'http://localhost:5000/api/v1',
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   },
   withCredentials: true,
-  timeout: 10000
+  timeout: 30000,
+  retry: 3,
+  retryDelay: (retryCount) => retryCount * 1000
+});
+
+// Перехватчик для повторных попыток
+axiosClient.interceptors.response.use(null, async (error) => {
+  const { config } = error;
+  
+  if (!config || !config.retry) {
+    return Promise.reject(error);
+  }
+
+  config._retryCount = config._retryCount || 0;
+
+  if (config._retryCount >= config.retry) {
+    return Promise.reject(error);
+  }
+
+  config._retryCount += 1;
+
+  const delayPromise = new Promise(resolve => {
+    setTimeout(resolve, config.retryDelay(config._retryCount));
+  });
+
+  await delayPromise;
+
+  showToast.loading(`Повторная попытка ${config._retryCount}/${config.retry}...`);
+  return axiosClient(config);
 });
 
 // Перехватчик запросов
@@ -35,72 +65,45 @@ axiosClient.interceptors.request.use(
 // Перехватчик ответов
 axiosClient.interceptors.response.use(
   (response) => {
-    // Очищаем все текущие уведомления
     showToast.dismiss();
 
-    // Проверяем наличие данных в ответе
-    if (!response || !response.data) {
+    if (!response?.data) {
       throw new Error(TOAST_MESSAGES.ERROR.NO_DATA);
     }
 
-    // Для методов изменяющих данные показываем уведомление об успехе
     if (['post', 'put', 'delete', 'patch'].includes(response.config.method)) {
-      // Если есть специальное сообщение от сервера - показываем его
       if (response.data?.message) {
         showToast.success(response.data.message);
       } else {
-        // Иначе показываем стандартное сообщение
         showToast.success(TOAST_MESSAGES.SUCCESS.DEFAULT);
       }
     }
 
-    // Если в ответе есть токен - сохраняем его
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
     }
 
-    // Возвращаем данные из ответа
     return response.data;
   },
   (error) => {
-    // Очищаем все текущие уведомления
     showToast.dismiss();
 
-    // Обработка ошибки авторизации
-    if (error.response?.status === 401) {
-      // Очищаем токен
-      localStorage.removeItem('token');
-      localStorage.removeItem('auth-storage');
-      
-      // Перенаправляем на страницу входа
-      window.location.href = '/login';
-      return Promise.reject(error);
-    }
-
-    // Обработка ошибки истекшей сессии
-    if (error.response?.status === 403) {
+    // Обработка ошибок аутентификации
+    if ([401, 403].includes(error.response?.status)) {
       localStorage.removeItem('token');
       localStorage.removeItem('auth-storage');
       window.location.href = '/login';
       return Promise.reject(error);
     }
 
-    // Формируем сообщение об ошибке
-    const errorMessage = 
-      error.response?.data?.message || // Сообщение от сервера
-      error.message || // Сообщение из ошибки
-      TOAST_MESSAGES.ERROR.DEFAULT; // Стандартное сообщение
-
-    // Показываем уведомление об ошибке
+    const errorMessage = error.response?.data?.message || error.message || TOAST_MESSAGES.ERROR.DEFAULT;
     showToast.error(errorMessage);
 
-    // Если это сетевая ошибка
     if (!error.response) {
       console.error('Ошибка сети:', error);
       showToast.error(TOAST_MESSAGES.ERROR.NETWORK);
     }
 
-    // Логируем ошибку
     console.error('API Error:', {
       url: error.config?.url,
       method: error.config?.method,
@@ -121,7 +124,7 @@ export const authApi = {
   updateProfile: (data) => axiosClient.put('/auth/profile', data)
 };
 
-// API для работы с сотрудниками
+// API для работы с сотрудниками  
 export const employeeApi = {
   getAll: () => axiosClient.get('/employees'),
   getById: (id) => axiosClient.get(`/employees/${id}`),
@@ -158,11 +161,11 @@ export const companyApi = {
 
 // API для работы с бонусами
 export const bonusApi = {
-getEmployeeBonuses: () => axiosClient.get('/bonuses/employee/me'),
-    create: (data) => axiosClient.post('/bonuses', data),
-    getAll: () => axiosClient.get('/bonuses'),
-    update: (id, data) => axiosClient.put(`/bonuses/${id}`, data),
-    delete: (id) => axiosClient.delete(`/bonuses/${id}`)
+  getEmployeeBonuses: () => axiosClient.get('/bonuses/employee/me'),
+  create: (data) => axiosClient.post('/bonuses', data),
+  getAll: () => axiosClient.get('/bonuses'),
+  update: (id, data) => axiosClient.put(`/bonuses/${id}`, data),
+  delete: (id) => axiosClient.delete(`/bonuses/${id}`)
 };
 
 // Единый объект API
