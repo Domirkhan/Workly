@@ -12,36 +12,65 @@ export const useAuthStore = create(
       error: null,
 
       checkAuth: async () => {
-        try {
-          set({ isLoading: true, error: null });
-          const response = await api.auth.getMe();
-          
-          if (response?.data?.user) {
-            const user = response.data.user;
-            set({ 
-              user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                companyId: user.companyId,
-                position: user.position || 'Не указана',
-                hourlyRate: user.hourlyRate || 0,
-                status: user.status || 'inactive',
-                joinDate: user.joinDate
-              },
-              isLoading: false 
-            });
-            return user;
-          }
-          throw new Error('Ошибка получения данных пользователя');
-        } catch (error) {
-          console.error('Ошибка проверки авторизации:', error);
-          set({ user: null, isLoading: false, error: error.message });
-          localStorage.removeItem('token');
-          return null;
-        }
+  try {
+    set({ isLoading: true, error: null });
+    
+    // Проверяем наличие токена
+    const token = localStorage.getItem('token');
+    if (!token) {
+      set({ user: null, isLoading: false });
+      return null;
+    }
+
+    const response = await api.auth.getMe();
+    
+    // Проверяем наличие данных пользователя
+    if (!response?.user) {
+      throw new Error('Ошибка получения данных пользователя');
+    }
+
+    const user = response.user;
+
+    // Устанавливаем данные пользователя в store
+    set({ 
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        companyId: user.companyId,
+        position: user.position || 'Не указана',
+        hourlyRate: user.hourlyRate || 0,
+        status: user.status || 'inactive',
+        joinDate: user.joinDate
       },
+      isLoading: false,
+      error: null
+    });
+
+    return user;
+
+  } catch (error) {
+    console.error('Ошибка проверки авторизации:', error);
+    
+    // Очищаем данные при ошибке
+    localStorage.removeItem('token');
+    localStorage.removeItem('auth-storage');
+    
+    set({ 
+      user: null, 
+      isLoading: false, 
+      error: error.response?.data?.message || error.message 
+    });
+
+    // Перенаправляем на страницу входа при ошибке авторизации
+    if (error.response?.status === 401) {
+      window.location.href = '/login';
+    }
+
+    return null;
+  }
+},
 
       login: async (credentials) => {
         try {

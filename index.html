@@ -2,10 +2,15 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.ico" /> <!-- Исправляем иконку -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Workly - Учет рабочего времени</title>
-    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script> <!-- Только подключаем скрипт -->
+    <!-- Добавляем скрипт Socket.IO -->
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js">
+      const socket = io('https://workly-backend.onrender.com', {
+        transports: ['websocket'],
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>
