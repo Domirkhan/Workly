@@ -9,6 +9,7 @@ import {
   getArchiveMonths,
   getEmployeeStats,
   getEmployeeMonthlyRecords,
+  getEmployeeTimesheet,
   getEmployeeArchiveMonths
 } from '../controllers/timesheetController.js';
 
@@ -20,6 +21,7 @@ router.use(auth);
 router.get('/employee/stats', getEmployeeStats);
 router.get('/employee/monthly', getEmployeeMonthlyRecords);
 router.get('/employee/archive-months', getEmployeeArchiveMonths);
+router.get('/employee/timesheet', auth, getEmployeeTimesheet);
 
 // Маршруты для отметки времени
 router.post('/clock-in', clockIn);

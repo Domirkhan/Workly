@@ -27,68 +27,60 @@ export default function EmployeeDashboard() {
   const [error, setError] = useState(null);
 
 useEffect(() => {
- const fetchData = async () => {
-  if (!user?.id) return;
+  const fetchData = async () => {
+    if (!user?.id) return;
 
-  try {
-    setIsLoading(true);
-    setError(null);
+    try {
+      setIsLoading(true);
+      setError(null);
 
-    // Получаем записи и статистику параллельно
-    const [recordsResponse, statsResponse] = await Promise.all([
-      api.timesheet.getEmployeeTimesheet(user.id),
-      api.timesheet.getEmployeeStats(user.id)
-    ]);
+      // Получаем записи и статистику параллельно
+      const [recordsResponse, statsResponse] = await Promise.all([
+        api.timesheet.getEmployeeTimesheet(user.id),
+        api.timesheet.getEmployeeStats(user.id)
+      ]);
 
-    // Проверяем ответы
-    if (!recordsResponse || !statsResponse) {
-      throw new Error('Не удалось получить данные');
+      // Проверяем ответы
+      if (!recordsResponse || !statsResponse) {
+        throw new Error('Не удалось получить данные');
+      }
+
+      // Устанавливаем статистику с проверкой полей
+      setStats({
+        totalHours: Number(statsResponse.totalHours || 0),
+        totalEarnings: Number(statsResponse.totalEarnings || 0),
+        hoursThisWeek: Number(statsResponse.hoursThisWeek || 0),
+        attendanceRate: Number(statsResponse.attendanceRate || 0)
+      });
+
+      // Преобразуем записи с проверкой на массив
+      const records = Array.isArray(recordsResponse) ? recordsResponse : [];
+      
+      // Фильтруем и форматируем записи
+      const formattedRecords = records
+        .filter(record => record && record.date) // Проверяем каждую запись
+        .map(record => ({
+          ...record,
+          date: format(new Date(record.date), 'yyyy-MM-dd'),
+          totalHours: Number(record.totalHours || 0),
+          calculatedPay: Number(record.calculatedPay || 0)
+        }))
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      // Устанавливаем записи
+      setRecords(formattedRecords);
+
+      showToast.success('Данные успешно загружены');
+
+    } catch (error) {
+      console.error('Ошибка загрузки данных:', error);
+      setError(error.response?.data?.message || error.message || 'Произошла ошибка при загрузке данных');
+      showToast.error(error.response?.data?.message || 'Ошибка при загрузке данных');
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    // Устанавливаем статистику с проверкой полей
-    setStats({
-      totalHours: Number(statsResponse.totalHours || 0),
-      totalEarnings: Number(statsResponse.totalEarnings || 0),
-      hoursThisWeek: Number(statsResponse.hoursThisWeek || 0),
-      attendanceRate: Number(statsResponse.attendanceRate || 0)
-    });
-
-    // Преобразуем и фильтруем записи
-    const formattedRecords = recordsResponse
-      .filter(record => record.date) // Проверяем наличие даты
-      .map(record => ({
-        ...record,
-        date: format(new Date(record.date), 'yyyy-MM-dd'),
-        totalHours: Number(record.totalHours || 0),
-        calculatedPay: Number(record.calculatedPay || 0)
-      }))
-      .sort((a, b) => new Date(b.date) - new Date(a.date));
-
-    // Устанавливаем записи
-    setRecords(formattedRecords);
-
-    // Показываем уведомление об успехе
-    showToast.success('Данные успешно загружены');
-
-  } catch (error) {
-    console.error('Ошибка загрузки данных:', error);
-    
-    // Формируем сообщение об ошибке
-    const errorMessage = error.response?.data?.message || 
-                        error.message || 
-                        'Произошла ошибка при загрузке данных';
-    
-    // Устанавливаем ошибку
-    setError(errorMessage);
-    
-    // Показываем уведомление об ошибке
-    showToast.error(errorMessage);
-
-  } finally {
-    setIsLoading(false);
-  }
-};
-  
   fetchData();
 }, [user?.id]);
 

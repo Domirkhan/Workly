@@ -492,3 +492,37 @@ export const getEmployeeStats = async (req, res) => {
     });
   }
 };
+
+export const getEmployeeTimesheet = async (req, res) => {
+  try {
+    const employeeId = req.user.id;
+
+    // Получаем записи сотрудника
+    const timeRecords = await TimeRecord.find({
+      employee: employeeId
+    })
+    .sort({ date: -1 })
+    .lean();
+
+    // Обрабатываем записи
+    const processedRecords = timeRecords.map(record => ({
+      ...record,
+      totalHours: Number(record.totalHours || 0),
+      calculatedPay: Number(record.calculatedPay || 0),
+      // Убедимся, что даты правильно форматируются
+      date: record.date,
+      clockIn: record.clockIn,
+      clockOut: record.clockOut
+    }));
+
+    // Отправляем ответ
+    res.json(processedRecords);
+
+  } catch (error) {
+    console.error('Ошибка при получении записей:', error);
+    res.status(500).json({ 
+      message: 'Ошибка при получении записей',
+      error: error.message 
+    });
+  }
+};
