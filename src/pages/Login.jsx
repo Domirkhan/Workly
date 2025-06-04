@@ -26,19 +26,46 @@ export default function Login() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
+  
+  try {
+    // Используем login из authStore вместо прямого вызова api
+    const { user } = await login(formData);
     
-    try {
-      const { user } = await api.auth.login(formData);
-      
-      // Редирект в зависимости от роли
-      navigate(user.role === 'admin' ? '/admin' : '/employee');
-      
-      toast.success(TOAST_MESSAGES.SUCCESS.LOGIN);
-    } catch (error) {
-      console.error('Ошибка входа:', error);
+    if (!user) {
+      throw new Error('Ошибка получения данных пользователя');
     }
-  };
+
+    // Показываем уведомление об успешном входе
+    toast.success(TOAST_MESSAGES.SUCCESS.LOGIN);
+
+    // Делаем небольшую задержку перед редиректом
+    setTimeout(() => {
+      // Редирект в зависимости от роли
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/employee');
+      }
+    }, 500);
+
+  } catch (error) {
+    console.error('Ошибка входа:', error);
+    
+    // Показываем ошибку пользователю
+    toast.error(
+      error.response?.data?.message || 
+      error.message || 
+      TOAST_MESSAGES.ERROR.LOGIN
+    );
+    
+    // Очищаем пароль при ошибке
+    setFormData(prev => ({
+      ...prev,
+      password: ''
+    }));
+  }
+};
 
   return (
     <div className="min-h-screen flex flex-col justify-center bg-slate-50 p-4">
