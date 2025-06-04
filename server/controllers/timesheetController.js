@@ -440,27 +440,34 @@ export const getEmployeeStats = async (req, res) => {
   try {
     const employeeId = req.user.id;
     
-    // Получаем все записи сотрудника
     const allRecords = await TimeRecord.find({
       employee: employeeId,
       status: 'completed'
     }).lean();
 
-    // Расчет общего количества часов и заработка
-    const totalHours = allRecords.reduce((sum, record) => 
-      sum + (record.totalHours || 0), 0);
-    
-    const totalEarnings = allRecords.reduce((sum, record) => 
-      sum + (record.calculatedPay || 0), 0);
+    // Расчет статистики с проверкой на null
+    const stats = {
+      totalHours: Number(allRecords.reduce((sum, record) => 
+        sum + (record.totalHours || 0), 0
+      ).toFixed(2)),
+      
+      totalEarnings: Number(allRecords.reduce((sum, record) => 
+        sum + (record.calculatedPay || 0), 0
+      ).toFixed(2)),
+      
+      hoursThisWeek: 0,
+      attendanceRate: 0
+    };
 
-    // Расчет часов за текущую неделю
+    // Добавляем статистику за неделю
     const startOfWeek = new Date();
-    startOfWeek.setHours(0, 0, 0, 0);
     startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
 
-    const hoursThisWeek = allRecords
+    stats.hoursThisWeek = Number(allRecords
       .filter(record => new Date(record.date) >= startOfWeek)
-      .reduce((sum, record) => sum + (record.totalHours || 0), 0);
+      .reduce((sum, record) => sum + (record.totalHours || 0), 0)
+      .toFixed(2));
 
     // Расчет посещаемости
     const totalWorkDays = allRecords.length;
@@ -471,19 +478,17 @@ export const getEmployeeStats = async (req, res) => {
       return clockIn <= workStart;
     }).length;
 
-    const attendanceRate = totalWorkDays > 0 
+    stats.attendanceRate = totalWorkDays > 0 
       ? Math.round((onTimeArrivals / totalWorkDays) * 100)
       : 100;
 
-    res.json({
-      totalHours,
-      totalEarnings,
-      hoursThisWeek,
-      attendanceRate
-    });
+    res.json(stats);
 
   } catch (error) {
     console.error('Ошибка при получении статистики:', error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ 
+      message: 'Ошибка при получении статистики',
+      error: error.message 
+    });
   }
 };
