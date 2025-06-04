@@ -140,31 +140,37 @@ export const login = async (req, res) => {
     // Генерация токена
     const token = generateToken(user._id);
 
-    // Настройка cookie
+    // Настройка cookie для production
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 30 * 24 * 60 * 60 * 1000
+      secure: true, // Всегда true для HTTPS
+      sameSite: 'none', // Для cross-site запросов
+      domain: '.onrender.com', // Домен для продакшн
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 дней
     });
 
+    // Отправляем ответ с токеном и данными пользователя
     res.json({
+      token, // Добавляем токен в ответ для сохранения в localStorage
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
-        position: user.position,
-        hourlyRate: user.hourlyRate,
-        status: user.status,
+        position: user.position || 'Не указана',
+        hourlyRate: user.hourlyRate || 0,
+        status: user.status || 'inactive',
         companyId: user.companyId,
         joinDate: user.joinDate
-      }
+      },
+      message: TOAST_MESSAGES.SUCCESS.LOGIN
     });
+
   } catch (error) {
     console.error('Ошибка входа:', error);
     res.status(500).json({ 
-      message: TOAST_MESSAGES.ERROR.LOGIN 
+      success: false,
+      message: error.message || TOAST_MESSAGES.ERROR.LOGIN
     });
   }
 };

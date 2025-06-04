@@ -14,20 +14,31 @@ export const useAuthStore = create(
       checkAuth: async () => {
         try {
           set({ isLoading: true, error: null });
-          const { user } = await api.auth.getMe();
+          const response = await api.auth.getMe();
           
-          set({ 
-            user: {
-              ...user,
-              hourlyRate: user?.hourlyRate || 0,
-              position: user?.position || 'Не указана',
-              status: user?.status || 'inactive'
-            }, 
-            isLoading: false
-          });
-          return user;
+          if (response?.data?.user) {
+            const user = response.data.user;
+            set({ 
+              user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                companyId: user.companyId,
+                position: user.position || 'Не указана',
+                hourlyRate: user.hourlyRate || 0,
+                status: user.status || 'inactive',
+                joinDate: user.joinDate
+              },
+              isLoading: false 
+            });
+            return user;
+          }
+          throw new Error('Ошибка получения данных пользователя');
         } catch (error) {
+          console.error('Ошибка проверки авторизации:', error);
           set({ user: null, isLoading: false, error: error.message });
+          localStorage.removeItem('token');
           return null;
         }
       },
@@ -35,12 +46,41 @@ export const useAuthStore = create(
       login: async (credentials) => {
         try {
           set({ isLoading: true, error: null });
-          const { user } = await api.auth.login(credentials);
-          set({ user, isLoading: false });
+          
+          const response = await api.auth.login(credentials);
+          const { user, token } = response.data;
+
+          if (!token || !user) {
+            throw new Error('Неверный ответ сервера');
+          }
+
+          localStorage.setItem('token', token);
+
+          set({ 
+            user: {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              role: user.role,
+              companyId: user.companyId,
+              position: user.position || 'Не указана',
+              hourlyRate: user.hourlyRate || 0,
+              status: user.status || 'inactive',
+              joinDate: user.joinDate
+            },
+            isLoading: false 
+          });
+
           toast.success(TOAST_MESSAGES.SUCCESS.LOGIN);
-          return user;
+          return { user, token };
+
         } catch (error) {
-          set({ error: error.message, isLoading: false });
+          set({ 
+            user: null, 
+            isLoading: false, 
+            error: error.response?.data?.message || error.message 
+          });
+          toast.error(error.response?.data?.message || TOAST_MESSAGES.ERROR.LOGIN);
           throw error;
         }
       },
@@ -48,12 +88,33 @@ export const useAuthStore = create(
       register: async (userData) => {
         try {
           set({ isLoading: true, error: null });
-          const { user } = await api.auth.register(userData);
-          set({ user, isLoading: false });
+          const response = await api.auth.register(userData);
+          const { user, token } = response.data;
+
+          if (token) {
+            localStorage.setItem('token', token);
+          }
+
+          set({ 
+            user: {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              role: user.role,
+              companyId: user.companyId,
+              position: user.position || 'Не указана',
+              hourlyRate: user.hourlyRate || 0,
+              status: user.status || 'inactive',
+              joinDate: user.joinDate
+            }, 
+            isLoading: false 
+          });
+          
           toast.success(TOAST_MESSAGES.SUCCESS.REGISTER);
           return user;
         } catch (error) {
-          set({ error: error.message, isLoading: false });
+          set({ error: error.response?.data?.message || error.message, isLoading: false });
+          toast.error(error.response?.data?.message || TOAST_MESSAGES.ERROR.REGISTER);
           throw error;
         }
       },
@@ -62,28 +123,44 @@ export const useAuthStore = create(
         try {
           set({ isLoading: true });
           await api.auth.logout();
-          set({ user: null, isLoading: false });
+          
+          localStorage.removeItem('token');
           localStorage.removeItem('auth-storage');
+          
+          set({ user: null, isLoading: false, error: null });
           toast.success(TOAST_MESSAGES.SUCCESS.LOGOUT);
+          
           window.location.href = '/login';
         } catch (error) {
+          console.error('Ошибка при выходе:', error);
           set({ error: error.message, isLoading: false });
-          throw error;
+          toast.error(TOAST_MESSAGES.ERROR.LOGOUT);
         }
       },
 
       updateProfile: async (userData) => {
         try {
           set({ isLoading: true });
-          const { user } = await api.auth.updateProfile(userData);
-          set(state => ({ 
-            user: { ...state.user, ...user },
-            isLoading: false 
-          }));
-          toast.success(TOAST_MESSAGES.SUCCESS.PROFILE_UPDATED);
-          return user;
+          const response = await api.auth.updateProfile(userData);
+          
+          if (response?.data?.user) {
+            const updatedUser = response.data.user;
+            set(state => ({ 
+              user: {
+                ...state.user,
+                ...updatedUser,
+                position: updatedUser.position || state.user.position,
+                hourlyRate: updatedUser.hourlyRate || state.user.hourlyRate
+              },
+              isLoading: false 
+            }));
+            toast.success(TOAST_MESSAGES.SUCCESS.PROFILE_UPDATED);
+            return updatedUser;
+          }
+          throw new Error('Ошибка обновления профиля');
         } catch (error) {
-          set({ error: error.message, isLoading: false });
+          set({ error: error.response?.data?.message || error.message, isLoading: false });
+          toast.error(TOAST_MESSAGES.ERROR.PROFILE_UPDATE);
           throw error;
         }
       },
@@ -91,8 +168,9 @@ export const useAuthStore = create(
       clearError: () => set({ error: null }),
       
       resetAuth: () => {
-        set({ user: null, isLoading: false, error: null });
+        localStorage.removeItem('token');
         localStorage.removeItem('auth-storage');
+        set({ user: null, isLoading: false, error: null });
       }
     }),
     {

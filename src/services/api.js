@@ -16,6 +16,11 @@ const axiosClient = axios.create({
 // Перехватчик запросов
 axiosClient.interceptors.request.use(
   (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
     if (['post', 'put', 'delete'].includes(config.method)) {
       showToast.loading('Загрузка...');
     }
