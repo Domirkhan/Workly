@@ -3,36 +3,31 @@ import User from '../models/userModel.js';
 import  sendEmail  from '../utils/sendEmail.js';
 
 export const createBonus = async (req, res) => {
-    try {
-      console.log('Получены данные:', req.body);
-      const { employeeId, type, amount, reason } = req.body;
-      
-      if (!employeeId || !type || !amount || !reason) {
-        return res.status(400).json({ 
-          message: 'Все поля обязательны для заполнения' 
-        });
-      }
-  
-      const employee = await User.findById(employeeId);
-      if (!employee) {
-        return res.status(404).json({ message: 'Сотрудник не найден' });
-      }
-  
-      console.log('Найден сотрудник:', employee);
-  
-      const bonus = new Bonus({
-        employee: employeeId,
-        type,
-        amount,
-        reason,
-        createdBy: req.user.id
+  try {
+    const { employeeId, type, amount, reason } = req.body;
+    
+    if (!employeeId || !type || !amount || !reason) {
+      return res.status(400).json({ 
+        message: 'Все поля обязательны для заполнения' 
       });
-  
-      await bonus.save();
-      console.log('Бонус сохранен:', bonus);
-  
-      try {
-    console.log('Подготовка к отправке email...');
+    }
+
+    const employee = await User.findById(employeeId);
+    if (!employee) {
+      return res.status(404).json({ message: 'Сотрудник не найден' });
+    }
+
+    const bonus = new Bonus({
+      employee: employeeId,
+      type,
+      amount,
+      reason,
+      createdBy: req.user.id
+    });
+
+    await bonus.save();
+
+    // Отправка email
     const emailHtml = `
       <h2>Уведомление о ${type === 'bonus' ? 'премии' : 'штрафе'}</h2>
       <p>Уважаемый ${employee.name},</p>
@@ -42,32 +37,34 @@ export const createBonus = async (req, res) => {
       <p>С уважением,<br>Администрация WorklyApp</p>
     `;
 
-    await sendEmail(
-      employee.email,
-      `${type === 'bonus' ? 'Премия' : 'Штраф'} - WorklyApp`,
-      emailHtml
-    );
-    console.log('Email успешно отправлен на', employee.email);
-  } catch (emailError) {
-    console.error('Подробная ошибка отправки email:', {
-      error: emailError.message,
-      stack: emailError.stack,
-      employee: employee.email
+    try {
+      await sendEmail(
+        employee.email,
+        `${type === 'bonus' ? 'Премия' : 'Штраф'} - WorklyApp`,
+        emailHtml
+      );
+      
+      res.status(201).json({ 
+        ...bonus.toObject(), 
+        emailSent: true 
+      });
+    } catch (emailError) {
+      console.error('Ошибка отправки email:', emailError);
+      // Даже если email не отправился, возвращаем успешный результат создания премии
+      res.status(201).json({ 
+        ...bonus.toObject(), 
+        emailSent: false,
+        emailError: emailError.message
+      });
+    }
+  } catch (error) {
+    console.error('Ошибка создания бонуса:', error);
+    res.status(500).json({ 
+      message: 'Внутренняя ошибка сервера',
+      error: error.message 
     });
   }
-
-  res.status(201).json({ 
-    ...bonus.toObject(), 
-    emailSent: true 
-  });
-} catch (error) {
-  console.error('Ошибка создания бонуса:', error);
-  res.status(500).json({ 
-    message: 'Внутренняя ошибка сервера',
-    error: error.message 
-  });
-    }
-  };
+};
 
 export const getEmployeeBonuses = async (req, res) => {
   try {

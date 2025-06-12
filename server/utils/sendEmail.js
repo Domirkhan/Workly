@@ -2,45 +2,36 @@ import nodemailer from 'nodemailer';
 
 const sendEmail = async (email, subject, html) => {
   try {
-    // Создаем транспорт с более детальными настройками
+    // Создаем транспорт
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      secure: true, // для порта 465
+      service: 'gmail', // Используем сервис Gmail
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
       auth: {
         user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      },
-      tls: {
-        // Не проверяем сертификат
-        rejectUnauthorized: false
+        pass: process.env.SMTP_PASS // Используйте пароль приложения
       }
     });
 
-    // Добавляем логирование для отладки
-    console.log('Настройки SMTP:', {
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      user: process.env.SMTP_USER
-    });
+    console.log('Отправка письма на:', email);
 
-    const mailOptions = {
-      from: `"WorklyApp" <${process.env.SMTP_FROM}>`,
+    // Отправляем письмо
+    const info = await transporter.sendMail({
+      from: `"WorklyApp" <${process.env.SMTP_USER}>`,
       to: email,
       subject: subject,
       html: html
-    };
+    });
 
-    console.log('Отправка письма на:', email);
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Email успешно отправлен:', info.messageId);
+    console.log('Письмо отправлено:', info.messageId);
     return true;
   } catch (error) {
-    console.error('Детальная ошибка отправки email:', {
-      message: error.message,
+    console.error('Ошибка отправки email:', {
+      error: error.message,
       stack: error.stack
     });
-    throw error; // Пробрасываем ошибку для лучшей обработки
+    throw error;
   }
 };
 

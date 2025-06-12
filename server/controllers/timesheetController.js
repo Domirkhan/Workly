@@ -20,12 +20,31 @@ export const clockIn = async (req, res) => {
       return res.status(404).json({ message: 'Компания не найдена' });
     }
 
-    // Проверяем валидность QR-кода
     if (!company.isQRCodeValid() || company.qrCode !== qrCode) {
       return res.status(400).json({ message: 'Недействительный QR-код' });
     }
 
-    // Создаем новую запись
+    // Проверяем, есть ли уже запись за сегодня
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const existingRecord = await TimeRecord.findOne({
+      employee: employee._id,
+      date: {
+        $gte: today,
+        $lt: tomorrow
+      }
+    });
+
+    if (existingRecord) {
+      return res.status(400).json({ 
+        message: 'Вы уже отметили начало рабочего дня сегодня' 
+      });
+    }
+
+    // Создаем новую запись только если нет существующей
     const timeRecord = new TimeRecord({
       employee: employee._id,
       company: company._id,
