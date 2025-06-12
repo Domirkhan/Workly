@@ -11,17 +11,28 @@ export default function BonusHistoryPage() {
   const { user } = useAuthStore();
 
   useEffect(() => {
-    const fetchBonuses = async () => {
-      try {
-        const response = await fetch(`/api/v1/bonuses/employee/${user.id}`);
-        const data = await response.json();
-        setBonuses(data);
-      } catch (error) {
-        console.error('Ошибка при загрузке премий/штрафов:', error);
-      } finally {
-        setIsLoading(false);
+   const fetchBonuses = async () => {
+  try {
+    const response = await fetch(`https://workly-backend.onrender.com/api/v1/bonuses/employee/${user.id}`, {
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json'
       }
-    };
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Ошибка HTTP: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    setBonuses(data);
+  } catch (error) {
+    console.error('Ошибка при загрузке премий/штрафов:', error);
+    setBonuses([]); // Устанавливаем пустой массив в случае ошибки
+  } finally {
+    setIsLoading(false);
+  }
+};
 
     if (user?.id) {
       fetchBonuses();
