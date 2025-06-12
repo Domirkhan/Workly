@@ -12,39 +12,39 @@ export default function BonusModal({ isOpen, onClose, employee }) {
 
   if (!employee) return null;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch('https://workly-backend.onrender.com/api/v1/bonuses', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}` // Добавьте токен
-        },
-        body: JSON.stringify({
-          employeeId: employee._id,
-          type: formData.type,
-          amount: Number(formData.amount), // Преобразуем в число
-          reason: formData.reason
-        })
-      });
-  
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Произошла ошибка');
-      }
-  
-      toast.success(
-        formData.type === 'bonus' 
-          ? 'Премия успешно начислена' 
-          : 'Штраф успешно назначен'
-      );
-      onClose();
-    } catch (error) {
-      toast.error(error.message);
-      console.error('Ошибка:', error);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const response = await fetch('https://workly-backend.onrender.com/api/v1/bonuses', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include', // Добавляем для передачи cookie
+      body: JSON.stringify({
+        employeeId: employee._id,
+        type: formData.type,
+        amount: Number(formData.amount),
+        reason: formData.reason
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Произошла ошибка');
     }
-  };
+
+    toast.success(
+      formData.type === 'bonus' 
+        ? 'Премия успешно начислена' 
+        : 'Штраф успешно назначен'
+    );
+    onClose();
+  } catch (error) {
+    toast.error(error.message);
+    console.error('Ошибка:', error);
+  }
+};
 
   return (
     <Dialog open={isOpen} onClose={onClose}>
