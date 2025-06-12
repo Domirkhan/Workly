@@ -19,12 +19,9 @@ dotenv.config({ path: path.join(__dirname, '..', '.env') });
 const app = express();
 
 // Middleware
-app.use(express.json());
-app.use(cookieParser());
-app.use(express.urlencoded({ extended: true }));
 app.use(cors({
-  origin: 'https://workly-zd8z.onrender.com', // Только один конкретный домен
-  credentials: true,
+  origin: ['https://workly-zd8z.onrender.com', 'http://localhost:5173'], // Разрешенные домены
+  credentials: true, // Разрешаем передачу credentials
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
   exposedHeaders: ['Set-Cookie']
@@ -32,8 +29,11 @@ app.use(cors({
 
 // Добавьте промежуточное ПО для OPTIONS запросов
 app.options('*', cors());
-// Добавим настройки cookie-parser
-app.use(cookieParser(process.env.JWT_SECRET)); // Используем JWT_SECRET как секрет
+
+
+app.use(express.json());
+app.use(cookieParser());
+app.use(express.urlencoded({ extended: true })); 
 // Важно: сначала подключаем API маршруты
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/employees', employeeRoutes);
