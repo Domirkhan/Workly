@@ -15,7 +15,7 @@ export default function BonusModal({ isOpen, onClose, employee }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/v1/bonuses', {
+      const response = await fetch('https://workly-backend.onrender.com/api/v1/bonuses', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

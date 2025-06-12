@@ -15,19 +15,30 @@ export default function EmployeeProfile() {
   
   // Получаем данные сотрудника из БД
   useEffect(() => {
-    async function fetchEmployee() {
-      try {
-        const res = await fetch(`/api/v1/employees/${id}`);
-        if (!res.ok) {
-          throw new Error('Failed to fetch employee data');
-        }
-        const data = await res.json();
-        setEmployee(data);
-        setFormData(data);
-      } catch (error) {
-        console.error(error);
+async function fetchEmployee() {
+  try {
+    const response = await fetch(
+      `https://workly-backend.onrender.com/api/v1/employees/${id}`,
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
       }
+    );
+
+    if (!response.ok) {
+      throw new Error('Не удалось загрузить данные сотрудника');
     }
+    
+    const data = await response.json();
+    setEmployee(data);
+    setFormData(data);
+  } catch (error) {
+    console.error('Ошибка загрузки данных сотрудника:', error);
+    setError(error.message);
+  }
+}
     fetchEmployee();
   }, [id]);
   
