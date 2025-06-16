@@ -3,15 +3,17 @@ import { persist } from 'zustand/middleware';
 
 export const useAuthStore = create(
   persist(
-    (set, get) => ({
+      (set, get) => ({
       user: null,
-      isLoading: false,
+      isAuthChecking: false, // Для проверки авторизации
+      isLoginLoading: false, // Для входа
+      isRegisterLoading: false, // Для регистрации
       error: null,
 
 
 checkAuth: async () => {
   try {
-    set({ isLoading: true, error: null });
+    set({ iisAuthChecking: true, error: null });
     const response = await fetch('https://workly-backend.onrender.com/api/v1/auth/me', {
       method: 'GET',
       headers: {
@@ -71,36 +73,38 @@ login: async (credentials) => {
 
       // Метод для регистрации
       register: async (userData) => {
-        try {
-          set({ isLoading: true, error: null });
-          const response = await fetch('/api/v1/auth/register', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            credentials: 'include',
-            body: JSON.stringify(userData)
-          });
-
-          const data = await response.json();
-
-          if (!response.ok) {
-            throw new Error(data.message || 'Ошибка регистрации');
-          }
-
-          set({ user: data.user, isLoading: false });
-          return data.user;
-        } catch (error) {
-          console.error('Ошибка регистрации:', error);
-          set({ error: error.message, isLoading: false });
-          throw error;
-        }
+  try {
+    set({ isRegisterLoading: true, error: null });
+    const response = await fetch('https://workly-backend.onrender.com/api/v1/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
       },
+      credentials: 'include',
+      body: JSON.stringify(userData)
+    });
+
+    // Добавляем проверку на пустой ответ
+    const text = await response.text();
+    const data = text ? JSON.parse(text) : {};
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Ошибка регистрации');
+    }
+
+    set({ user: data.user, isRegisterLoading: false });
+    return data.user;
+  } catch (error) {
+    console.error('Ошибка регистрации:', error);
+    set({ error: error.message, isRegisterLoading: false });
+    throw error;
+  }
+},
 
       // Метод для выхода
       logout: async () => {
         try {
-          const response = await fetch('/api/v1/auth/logout', {
+          const response = await fetch('https://workly-backend.onrender.com/api/v1/auth/logout', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -126,7 +130,7 @@ login: async (credentials) => {
       updateProfile: async (userData) => {
         try {
           set({ isLoading: true, error: null });
-          const response = await fetch('/api/v1/auth/profile', {
+          const response = await fetch('https://workly-backend.onrender.com/api/v1/auth/profile', {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json'

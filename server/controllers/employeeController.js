@@ -6,10 +6,18 @@ export const createEmployee = async (req, res) => {
   try {
     const { email, name, position, hourlyRate, status, joinDate } = req.body;
     
+    if (!email || !name || !position || !hourlyRate) {
+      return res.status(400).json({ 
+        message: 'Пожалуйста, заполните все обязательные поля' 
+      });
+    }
+
     // Получаем админа и его компанию
     const admin = await User.findById(req.user.id);
     if (!admin || !admin.companyId) {
-      return res.status(400).json({ message: 'Компания не найдена' });
+      return res.status(400).json({ 
+        message: 'Компания не найдена' 
+      });
     }
 
     // Ищем пользователя по email
@@ -20,7 +28,6 @@ export const createEmployee = async (req, res) => {
       });
     }
 
-    // Проверяем не привязан ли уже пользователь к другой компании
     if (existingUser.companyId) {
       return res.status(400).json({ 
         message: 'Этот пользователь уже привязан к другой компании' 
@@ -32,28 +39,36 @@ export const createEmployee = async (req, res) => {
       companyId: admin.companyId,
       position: position,
       hourlyRate: hourlyRate,
-      status: status,
-      joinDate: joinDate,
-      role: 'employee' // Убедимся, что роль установлена как employee
+      status: status || 'active',
+      joinDate: joinDate || new Date(),
+      role: 'employee'
     };
 
-    // Используем findByIdAndUpdate вместо save()
     const updatedEmployee = await User.findByIdAndUpdate(
       existingUser._id,
       updates,
       { new: true }
     ).select('-password');
 
+    if (!updatedEmployee) {
+      return res.status(500).json({ 
+        message: 'Ошибка при обновлении данных сотрудника' 
+      });
+    }
+
     // Добавляем сотрудника в компанию
     await Company.findByIdAndUpdate(
       admin.companyId,
-      { $addToSet: { employees: updatedEmployee._id } } // Используем $addToSet вместо $push
+      { $addToSet: { employees: updatedEmployee._id } }
     );
     
     res.status(200).json(updatedEmployee);
   } catch (error) {
     console.error('Error adding employee:', error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ 
+      message: 'Внутренняя ошибка сервера',
+      error: error.message 
+    });
   }
 };
 // Получить всех сотрудников компании

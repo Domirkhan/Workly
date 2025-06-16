@@ -301,20 +301,17 @@ export const getEmployeeMonthlyDetails = async (req, res) => {
       });
     }
 
-    // Создаем правильные даты начала и конца месяца с UTC
+    // Проверяем существование сотрудника
+    const employee = await User.findById(employeeId);
+    if (!employee) {
+      return res.status(404).json({ 
+        message: 'Сотрудник не найден' 
+      });
+    }
+
     const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
     const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59));
 
-    // Получаем данные о сотруднике
-    const employee = await User.findById(employeeId)
-      .select('name position hourlyRate')
-      .lean();
-
-    if (!employee) {
-      return res.status(404).json({ message: 'Сотрудник не найден' });
-    }
-
-    // Получаем записи времени для сотрудника за выбранный месяц
     const records = await TimeRecord.find({
       employee: employeeId,
       date: {
@@ -325,7 +322,20 @@ export const getEmployeeMonthlyDetails = async (req, res) => {
     .sort({ date: 1 })
     .lean();
 
-    // Расчет итоговых значений с проверкой на null
+    // Если записей нет, возвращаем пустой массив
+    if (!records.length) {
+      return res.json({
+        employee: {
+          name: employee.name,
+          position: employee.position,
+          hourlyRate: employee.hourlyRate
+        },
+        records: [],
+        totalHours: 0,
+        totalPay: 0
+      });
+    }
+
     const totalHours = records.reduce((sum, record) => 
       sum + (Number(record.totalHours) || 0), 0
     );
@@ -335,14 +345,20 @@ export const getEmployeeMonthlyDetails = async (req, res) => {
     );
 
     res.json({
-      employee,
+      employee: {
+        name: employee.name,
+        position: employee.position,
+        hourlyRate: employee.hourlyRate
+      },
       records,
       totalHours: Number(totalHours.toFixed(1)),
       totalPay: Number(totalPay.toFixed(2))
     });
   } catch (error) {
-    console.error('Ошибка при получении деталей сотрудника:', error);
-    res.status(500).json({ message: error.message });
+    console.error('Ошибка при получении деталей:', error);
+    res.status(500).json({ 
+      message: 'Ошибка при получении данных сотрудника' 
+    });
   }
 };
 

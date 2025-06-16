@@ -34,35 +34,43 @@ fetchEmployees: async () => {
 },
       
       addEmployee: async (employeeData) => {
-        set({ isLoading: true, error: null });
-        try {
-          const response = await fetch('/api/v1/employees', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            credentials: 'include',
-            body: JSON.stringify(employeeData)
-          });
-          
-          const data = await response.json();
-          
-          if (!response.ok) {
-            throw new Error(data.message || 'Ошибка при добавлении сотрудника');
-          }
-          
-          set(state => ({
-            employees: [...state.employees, data],
-            isLoading: false
-          }));
-          
-          return data;
-        } catch (error) {
-          console.error('Ошибка при добавлении сотрудника:', error);
-          set({ error: error.message, isLoading: false });
-          throw error;
-        }
+  set({ isLoading: true, error: null });
+  try {
+    const response = await fetch('https://workly-backend.onrender.com/api/v1/employees', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
       },
+      credentials: 'include',
+      body: JSON.stringify(employeeData)
+    });
+
+    // Проверяем текстовый ответ сначала
+    const text = await response.text();
+    let data;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (e) {
+      console.error('Ошибка парсинга JSON:', e);
+      throw new Error('Некорректный ответ сервера');
+    }
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Ошибка при добавлении сотрудника');
+    }
+
+    set(state => ({
+      employees: [...state.employees, data],
+      isLoading: false
+    }));
+
+    return data;
+  } catch (error) {
+    console.error('Ошибка при добавлении сотрудника:', error);
+    set({ error: error.message, isLoading: false });
+    throw error;
+  }
+},
       
       updateEmployee: async (id, employeeData) => {
         set({ isLoading: true, error: null });

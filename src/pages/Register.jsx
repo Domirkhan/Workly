@@ -8,7 +8,7 @@ import { useAuthStore } from '../stores/authStore';
 
 export default function Register() {
   const navigate = useNavigate();
-  const { register, isLoading  } = useAuthStore();
+  const { register, isRegisterLoading  } = useAuthStore();
   
   const [formData, setFormData] = useState({
     name: '',

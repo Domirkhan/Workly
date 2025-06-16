@@ -15,66 +15,80 @@ export const register = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
     
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({ 
+        message: 'Пожалуйста, заполните все обязательные поля' 
+      });
+    }
+    
     // Проверяем существование пользователя
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: 'Пользователь с таким email уже существует' });
-    }
-    
-    // Хешируем пароль
-    const hashedPassword = await bcrypt.hash(password, 10);
-    
-    let user;
-    let company;
-    
-    if (role === 'admin') {
-      // Создаём компанию для админа
-      company = new Company({
-        name: `Company of ${name}`,
-      });
-      
-      // Создание админа
-      user = new User({
-        name,
-        email,
-        password: hashedPassword,
-        role,
-        companyId: company._id
-      });
-
-      company.owner = user._id;
-      await company.save();
-    } else {
-      // Создаём обычного пользователя без привязки к компании
-      user = new User({
-        name,
-        email,
-        password: hashedPassword,
-        role
+      return res.status(400).json({ 
+        message: 'Пользователь с таким email уже существует' 
       });
     }
 
-    await user.save();
+    // Добавляем обработку ошибок и всегда возвращаем JSON
+    try {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      let user;
+      let company;
 
-    // Создание токена
-    const token = generateToken(user._id);
+      if (role === 'admin') {
+        company = new Company({
+          name: `Company of ${name}`,
+        });
+        
+        user = new User({
+          name,
+          email,
+          password: hashedPassword,
+          role,
+          companyId: company._id
+        });
 
-res.cookie('token', token, {
-  httpOnly: true,
-  secure: true,
-  sameSite: 'none',
-  path: '/',
-  domain: process.env.NODE_ENV === 'production' ? 'onrender.com' : undefined,
-  maxAge: 30 * 24 * 60 * 60 * 1000
-});
-    res.status(201).json({
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role
-    });
+        company.owner = user._id;
+        await company.save();
+      } else {
+        user = new User({
+          name,
+          email,
+          password: hashedPassword,
+          role
+        });
+      }
+
+      await user.save();
+
+      const token = generateToken(user._id);
+
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        maxAge: 30 * 24 * 60 * 60 * 1000
+      });
+
+      return res.status(201).json({
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role
+        }
+      });
+    } catch (err) {
+      console.error('Ошибка при создании пользователя:', err);
+      return res.status(500).json({ 
+        message: 'Ошибка при создании пользователя' 
+      });
+    }
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Ошибка регистрации:', error);
+    return res.status(500).json({ 
+      message: 'Внутренняя ошибка сервера' 
+    });
   }
 };
 

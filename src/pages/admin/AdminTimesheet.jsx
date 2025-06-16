@@ -67,23 +67,29 @@ const fetchMonthlyData = async () => {
     fetchMonthlyData();
   }, [filterMonth]);
 
-  const fetchEmployeeDetails = async (employeeId) => {
+const fetchEmployeeDetails = async (employeeId) => {
   try {
     setIsLoading(true);
     const [year, month] = filterMonth.split('-');
     
     const response = await fetch(
-      `/api/v1/timesheet/employee/${employeeId}/monthly?month=${month}&year=${year}`,
+      `https://workly-backend.onrender.com/api/v1/timesheet/employee/${employeeId}/monthly?month=${month}&year=${year}`,
       {
         headers: {
-          'Accept': 'application/json'
-        }
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
       }
     );
     
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Ошибка при загрузке деталей сотрудника');
+      if (response.status === 404) {
+        throw new Error('Записи не найдены');
+      }
+      const errorData = await response.json().catch(() => ({
+        message: 'Ошибка при загрузке данных'
+      }));
+      throw new Error(errorData.message);
     }
     
     const data = await response.json();
