@@ -15,19 +15,15 @@ async function fetchWithAuth(endpoint, options = {}) {
       mode: 'cors'
     });
 
-    // Проверяем тип контента
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      throw new Error('Получен неверный формат ответа от сервера');
-    }
-
     if (!response.ok) {
       if (response.status === 401) {
+        // Перенаправляем на логин при ошибке авторизации
         window.location.href = '/login';
         throw new Error('Требуется авторизация');
       }
-      
-      const error = await response.json();
+      const error = await response.json().catch(() => ({
+        message: 'Ошибка сервера'
+      }));
       throw new Error(error.message || 'Произошла ошибка');
     }
 
