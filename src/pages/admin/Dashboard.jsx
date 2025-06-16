@@ -25,76 +25,82 @@ export default function AdminDashboard() {
     fetchDashboardData();
   }, []);
 
-  const fetchDashboardData = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
+const fetchDashboardData = async () => {
+  try {
+    setIsLoading(true);
+    setError(null);
 
-      // Получаем данные сотрудников и записи времени параллельно
-      const [employeesData, timesheetData] = await Promise.all([
-        employeeApi.getAll(),
-        timesheetApi.getAll()
-      ]);
+    // Получаем данные сотрудников и записи времени параллельно
+    const [employeesData, timesheetData] = await Promise.all([
+      employeeApi.getAll(),
+      timesheetApi.getAll()
+    ]);
 
-      // Расчет часов по сотрудникам
-      const hoursMap = {};
-      let totalRevenue = 0;
+    // Инициализация объектов для расчетов
+    const hoursMap = {};
+    let totalRevenue = 0;
+    const dailyHours = {};
 
-      timesheetData.forEach((record) => {
-        if (record.totalHours && record.employeeId) {
-          hoursMap[record.employeeId] = (hoursMap[record.employeeId] || 0) + record.totalHours;
-          if (record.calculatedPay) {
-            totalRevenue += record.calculatedPay;
-          }
+    // Обработка записей времени
+    timesheetData.forEach((record) => {
+      // Учитываем только завершенные записи
+      if (record.status === 'completed') {
+        const employeeId = record.employeeId || record.employee;
+        
+        // Расчет часов по сотрудникам
+        if (record.totalHours && employeeId) {
+          hoursMap[employeeId] = (hoursMap[employeeId] || 0) + Number(record.totalHours);
         }
-      });
+        
+        // Расчет выручки
+        if (record.calculatedPay) {
+          totalRevenue += Number(record.calculatedPay);
+        }
+        
+        // Расчет ежедневных часов для графика
+        if (record.totalHours && record.date) {
+          const dateKey = format(new Date(record.date), 'yyyy-MM-dd');
+          dailyHours[dateKey] = (dailyHours[dateKey] || 0) + Number(record.totalHours);
+        }
+      }
+    });
 
-      // Формируем данные сотрудников с часами
-      const employeesWithHours = employeesData.map(employee => ({
-        id: employee.id,
+    // Формирование данных сотрудников с часами
+    const employeesWithHours = employeesData
+      .map(employee => ({
+        id: employee._id || employee.id,
         name: employee.name,
         position: employee.position,
-        totalHours: Number((hoursMap[employee.id] || 0).toFixed(2)),
+        totalHours: Number((hoursMap[employee._id || employee.id] || 0).toFixed(1)),
         hourlyRate: employee.hourlyRate || 0
+      }))
+      .sort((a, b) => b.totalHours - a.totalHours); // Сортировка по убыванию часов
+
+    // Форматирование данных для графика
+    const chartData = Object.entries(dailyHours)
+      .sort(([a], [b]) => new Date(a) - new Date(b))
+      .slice(-7) // Показываем только последние 7 дней
+      .map(([date, hours]) => ({
+        date: format(new Date(date), 'dd.MM'),
+        hours: Number(hours.toFixed(1))
       }));
 
-      // Сортировка по убыванию часов
-      employeesWithHours.sort((a, b) => b.totalHours - a.totalHours);
-      setEmployeeHours(employeesWithHours);
+    // Обновление состояний
+    setEmployeeHours(employeesWithHours);
+    setDailyHoursData(chartData);
+    setStats({
+      totalEmployees: employeesData.length,
+      activeEmployees: employeesData.filter(emp => emp.status === 'active').length,
+      totalRevenue: Number(totalRevenue.toFixed(2))
+    });
 
-      // Расчет данных для графика
-      const dailyHours = {};
-      timesheetData.forEach((record) => {
-        if (record.totalHours) {
-          const dateKey = format(new Date(record.date), 'yyyy-MM-dd');
-          dailyHours[dateKey] = (dailyHours[dateKey] || 0) + record.totalHours;
-        }
-      });
-
-      // Форматирование данных для графика
-      const chartData = Object.entries(dailyHours)
-        .sort(([a], [b]) => new Date(a) - new Date(b))
-        .map(([date, hours]) => ({
-          date: format(new Date(date), 'dd.MM'),
-          hours: Number(hours.toFixed(1))
-        }));
-
-      setDailyHoursData(chartData);
-
-      // Обновление статистики
-      setStats({
-        totalEmployees: employeesData.length,
-        activeEmployees: employeesData.filter(emp => emp.status === 'active').length,
-        totalRevenue
-      });
-
-    } catch (error) {
-      console.error('Ошибка загрузки данных:', error);
-      setError(error.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  } catch (error) {
+    console.error('Ошибка загрузки данных:', error);
+    setError(error.message || 'Произошла ошибка при загрузке данных');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   if (isLoading) {
     return (
