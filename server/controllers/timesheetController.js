@@ -297,32 +297,24 @@ export const getEmployeeMonthlyDetails = async (req, res) => {
     
     if (!employeeId || !month || !year) {
       return res.status(400).json({ 
-        success: false,
         message: 'Необходимо указать id сотрудника, месяц и год' 
       });
     }
 
-    // Проверяем валидность ObjectId
-    if (!mongoose.Types.ObjectId.isValid(employeeId)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Некорректный ID сотрудника'
-      });
-    }
-
-    // Проверяем существование сотрудника
-    const employee = await User.findById(employeeId);
-    if (!employee) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Сотрудник не найден' 
-      });
-    }
-
+    // Создаем правильные даты начала и конца месяца с UTC
     const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
     const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59));
 
-    // Получаем записи за указанный месяц
+    // Получаем данные о сотруднике
+    const employee = await User.findById(employeeId)
+      .select('name position hourlyRate')
+      .lean();
+
+    if (!employee) {
+      return res.status(404).json({ message: 'Сотрудник не найден' });
+    }
+
+    // Получаем записи времени для сотрудника за выбранный месяц
     const records = await TimeRecord.find({
       employee: employeeId,
       date: {
@@ -333,35 +325,24 @@ export const getEmployeeMonthlyDetails = async (req, res) => {
     .sort({ date: 1 })
     .lean();
 
-    // Формируем ответ даже если записей нет
-    const response = {
-      success: true,
-      employee: {
-        name: employee.name,
-        position: employee.position,
-        hourlyRate: employee.hourlyRate
-      },
-      records: records,
-      summary: {
-        totalHours: records.reduce((sum, record) => 
-          sum + (Number(record.totalHours) || 0), 0
-        ),
-        totalPay: records.reduce((sum, record) => 
-          sum + (Number(record.calculatedPay) || 0), 0
-        ),
-        workDays: records.filter(r => r.status === 'completed').length
-      }
-    };
+    // Расчет итоговых значений с проверкой на null
+    const totalHours = records.reduce((sum, record) => 
+      sum + (Number(record.totalHours) || 0), 0
+    );
+    
+    const totalPay = records.reduce((sum, record) => 
+      sum + (Number(record.calculatedPay) || 0), 0
+    );
 
-    return res.status(200).json(response);
-
-  } catch (error) {
-    console.error('Ошибка при получении деталей:', error);
-    return res.status(500).json({ 
-      success: false,
-      message: 'Ошибка при получении данных сотрудника',
-      error: error.message 
+    res.json({
+      employee,
+      records,
+      totalHours: Number(totalHours.toFixed(1)),
+      totalPay: Number(totalPay.toFixed(2))
     });
+  } catch (error) {
+    console.error('Ошибка при получении деталей сотрудника:', error);
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -476,17 +457,9 @@ export const getEmployeeArchiveMonths = async (req, res) => {
 
 export const getEmployeeStats = async (req, res) => {
   try {
-    const employeeId = req.params.id || req.user.id;
-
-    // Получаем данные сотрудника
-    const employee = await User.findById(employeeId);
-    if (!employee) {
-      return res.status(404).json({ 
-        message: 'Сотрудник не найден' 
-      });
-    }
-
-    // Получаем все завершенные записи
+    const employeeId = req.user.id;
+    
+    // Получаем все записи сотрудника
     const allRecords = await TimeRecord.find({
       employee: employeeId,
       status: 'completed'
@@ -494,28 +467,26 @@ export const getEmployeeStats = async (req, res) => {
 
     // Расчет общего количества часов и заработка
     const totalHours = allRecords.reduce((sum, record) => 
-      sum + (Number(record.totalHours) || 0), 0
-    );
+      sum + (record.totalHours || 0), 0);
     
     const totalEarnings = allRecords.reduce((sum, record) => 
-      sum + (Number(record.calculatedPay) || 0), 0
-    );
+      sum + (record.calculatedPay || 0), 0);
 
     // Расчет часов за текущую неделю
     const startOfWeek = new Date();
     startOfWeek.setHours(0, 0, 0, 0);
-    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay()); // Начало недели (воскресенье)
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
 
     const hoursThisWeek = allRecords
       .filter(record => new Date(record.date) >= startOfWeek)
-      .reduce((sum, record) => sum + (Number(record.totalHours) || 0), 0);
+      .reduce((sum, record) => sum + (record.totalHours || 0), 0);
 
     // Расчет посещаемости
     const totalWorkDays = allRecords.length;
     const onTimeArrivals = allRecords.filter(record => {
       const clockIn = new Date(record.clockIn);
       const workStart = new Date(record.date);
-      workStart.setHours(9, 0, 0, 0); // Начало рабочего дня в 9:00
+      workStart.setHours(9, 0, 0, 0);
       return clockIn <= workStart;
     }).length;
 
@@ -523,38 +494,15 @@ export const getEmployeeStats = async (req, res) => {
       ? Math.round((onTimeArrivals / totalWorkDays) * 100)
       : 100;
 
-    // Расчет средних показателей
-    const avgHoursPerDay = totalWorkDays > 0 
-      ? Number((totalHours / totalWorkDays).toFixed(1))
-      : 0;
-
-    const avgEarningsPerDay = totalWorkDays > 0
-      ? Number((totalEarnings / totalWorkDays).toFixed(2))
-      : 0;
-
-    // Формируем и отправляем ответ
-    const stats = {
-      totalHours: Number(totalHours.toFixed(1)),
-      totalEarnings: Number(totalEarnings.toFixed(2)),
-      hoursThisWeek: Number(hoursThisWeek.toFixed(1)),
-      attendanceRate,
-      totalWorkDays,
-      avgHoursPerDay,
-      avgEarningsPerDay,
-      employee: {
-        name: employee.name,
-        position: employee.position,
-        hourlyRate: employee.hourlyRate
-      }
-    };
-
-    res.json(stats);
+    res.json({
+      totalHours,
+      totalEarnings,
+      hoursThisWeek,
+      attendanceRate
+    });
 
   } catch (error) {
     console.error('Ошибка при получении статистики:', error);
-    res.status(500).json({ 
-      message: 'Ошибка при получении статистики',
-      error: error.message 
-    });
+    res.status(500).json({ message: error.message });
   }
 };
