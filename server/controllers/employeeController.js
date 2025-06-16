@@ -8,37 +8,38 @@ export const createEmployee = async (req, res) => {
     
     if (!email || !name || !position || !hourlyRate) {
       return res.status(400).json({ 
+        success: false,
         message: 'Пожалуйста, заполните все обязательные поля' 
       });
     }
 
-    // Получаем админа и его компанию
     const admin = await User.findById(req.user.id);
     if (!admin || !admin.companyId) {
       return res.status(400).json({ 
+        success: false,
         message: 'Компания не найдена' 
       });
     }
 
-    // Ищем пользователя по email
     const existingUser = await User.findOne({ email });
     if (!existingUser) {
       return res.status(400).json({ 
-        message: 'Пользователь с таким email не зарегистрирован. Сначала пользователь должен создать аккаунт.' 
+        success: false,
+        message: 'Пользователь с таким email не найден' 
       });
     }
 
     if (existingUser.companyId) {
-      return res.status(400).json({ 
-        message: 'Этот пользователь уже привязан к другой компании' 
+      return res.status(400).json({
+        success: false,
+        message: 'Этот сотрудник уже привязан к другой компании'
       });
     }
 
-    // Обновляем данные существующего пользователя
     const updates = {
       companyId: admin.companyId,
-      position: position,
-      hourlyRate: hourlyRate,
+      position,
+      hourlyRate,
       status: status || 'active',
       joinDate: joinDate || new Date(),
       role: 'employee'
@@ -51,23 +52,22 @@ export const createEmployee = async (req, res) => {
     ).select('-password');
 
     if (!updatedEmployee) {
-      return res.status(500).json({ 
-        message: 'Ошибка при обновлении данных сотрудника' 
+      return res.status(500).json({
+        success: false,
+        message: 'Ошибка при обновлении данных сотрудника'
       });
     }
 
-    // Добавляем сотрудника в компанию
-    await Company.findByIdAndUpdate(
-      admin.companyId,
-      { $addToSet: { employees: updatedEmployee._id } }
-    );
-    
-    res.status(200).json(updatedEmployee);
+    return res.status(200).json({
+      success: true,
+      data: updatedEmployee
+    });
+
   } catch (error) {
-    console.error('Error adding employee:', error);
-    res.status(500).json({ 
-      message: 'Внутренняя ошибка сервера',
-      error: error.message 
+    console.error('Ошибка при добавлении сотрудника:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Внутренняя ошибка сервера'
     });
   }
 };
