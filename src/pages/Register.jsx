@@ -184,7 +184,7 @@ export default function Register() {
                   isLoading={isLoading}
                   leftIcon={<UserPlus size={18} />}
                 >
-                  {isLoading ? 'Создание...' : 'Создать аккаунт'}
+                  {isRegisterLoading ? 'Создание...' : 'Создать аккаунт'}
                 </Button>
               </div>
             </form>

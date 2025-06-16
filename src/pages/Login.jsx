@@ -86,7 +86,7 @@ export default function Login() {
                   isLoading={isLoading}
                   leftIcon={<LogIn size={18} />}
                 >
-                  {isLoading ? 'Вход...' : 'Войти'}
+                  {isLoginLoading ? 'Вход...' : 'Войти'}
                 </Button>
               </div>
             </form>
