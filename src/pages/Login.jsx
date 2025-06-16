@@ -8,7 +8,7 @@ import { useAuthStore } from '../stores/authStore';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, isLoginLoading, error } = useAuthStore();
+  const { login, isLoading, error } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   
@@ -86,7 +86,7 @@ export default function Login() {
                   isLoading={isLoading}
                   leftIcon={<LogIn size={18} />}
                 >
-                  {isLoginLoading ? 'Вход...' : 'Войти'}
+                  {isLoading ? 'Вход...' : 'Войти'}
                 </Button>
               </div>
             </form>

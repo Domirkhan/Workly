@@ -5,15 +5,14 @@ export const useAuthStore = create(
   persist(
       (set, get) => ({
       user: null,
-      isAuthChecking: false, // Для проверки авторизации
-      isLoginLoading: false, // Для входа
-      isRegisterLoading: false, // Для регистрации
+     isLoading: false, 
+     
       error: null,
 
 
 checkAuth: async () => {
   try {
-    set({ iisAuthChecking: true, error: null });
+    set({ isLoading: true, error: null });
     const response = await fetch('https://workly-backend.onrender.com/api/v1/auth/me', {
       method: 'GET',
       headers: {
@@ -74,7 +73,7 @@ login: async (credentials) => {
       // Метод для регистрации
       register: async (userData) => {
   try {
-    set({ isRegisterLoading: true, error: null });
+    set({ isLoading: true, error: null });
     const response = await fetch('https://workly-backend.onrender.com/api/v1/auth/register', {
       method: 'POST',
       headers: {

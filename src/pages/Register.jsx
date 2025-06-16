@@ -8,7 +8,7 @@ import { useAuthStore } from '../stores/authStore';
 
 export default function Register() {
   const navigate = useNavigate();
-  const { register, isRegisterLoading  } = useAuthStore();
+  const { register, isLoading  } = useAuthStore();
   
   const [formData, setFormData] = useState({
     name: '',
@@ -184,7 +184,7 @@ export default function Register() {
                   isLoading={isLoading}
                   leftIcon={<UserPlus size={18} />}
                 >
-                  {isRegisterLoading ? 'Создание...' : 'Создать аккаунт'}
+                  {isLoading ? 'Создание...' : 'Создать аккаунт'}
                 </Button>
               </div>
             </form>
